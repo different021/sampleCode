@@ -1,0 +1,12 @@
+#follder
+Debug/
+.vs/
+x64/
+x86/
+
+#file
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.ico
+*.rc
