@@ -37,7 +37,7 @@ lua_State* g_pLuaState = NULL;
 
 void Lua_Error(lua_State* L, const char* fmt, ...)
 {
-	/*
+
 	char text[4096];
 
 	va_list args;
@@ -46,7 +46,7 @@ void Lua_Error(lua_State* L, const char* fmt, ...)
 	va_end(args);
 
 	lua_pushstring(L, "_ALERT");
-	lua_gettable(L, LUA_GLOBALSINDEX);
+	//lua_gettable(L, LUA_GLOBALSINDEX);
 //		if(lua_isfunction(L, -1))
 	//{
 	//lua_pushstring(L, text);
@@ -59,7 +59,7 @@ void Lua_Error(lua_State* L, const char* fmt, ...)
 	//		printf("%s\n", text);
 	lua_pop(L, 1);
 	//	}
-	*/
+	
 }
 
 
@@ -102,7 +102,8 @@ int Lua_Process()
 	//
 	if (luaL_dofile(g_pLuaState, LUA_FILE_) != 0)
 	{
-		Lua_Error(g_pLuaState, "%s", lua_tostring(g_pLuaState, -1));	//에러메세지 체크.			 
+		Lua_Error(g_pLuaState, "%s", lua_tostring(g_pLuaState, -1));	//에러메세지 체크.	
+		printf("Lua Process Fail\n\n\n");
 	}
 
 

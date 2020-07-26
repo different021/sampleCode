@@ -5,6 +5,10 @@
 ** See Copyright Notice at the end of this file
 */
 
+#pragma  warning(disable:4789)		//Add @ 2008.09.Kihong Kim/ mad_dog@hanmail.net
+#pragma  warning(disable:4996)		//Add @ 2008.09.Kihong Kim/ mad_dog@hanmail.net
+
+
 
 #ifndef lua_h
 #define lua_h

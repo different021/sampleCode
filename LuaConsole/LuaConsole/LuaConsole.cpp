@@ -13,9 +13,13 @@ void Load_FunctionsDLL(HINSTANCE hIns);
 
 int main()
 {
-    HINSTANCE hIns = LoadLibrary(L"LuaDLL.dll");
+    HINSTANCE hIns = LoadLibrary(L"DLL/LuaDLL.dll");
     if (!hIns)
-        __debugbreak();
+    {
+        hIns = LoadLibrary(L"LuaDLL.dll");
+        //__debugbreak();
+    }
+        
 
     Load_FunctionsDLL(hIns);
 
