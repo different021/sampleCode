@@ -7,11 +7,10 @@
 
 --[[ C 엔진 제공 함수. : Lua Glue 함수. 
 
-	Version();					--루아와 엔진 버전 확인
-	SetSCNSize();				--모니터 사이즈 셋팅 현재 기본 셋팅
-	ClearScreen();				--그려준 내용 모두 지운다
-	Blt();						--Blt! 이 함수를 호출하면 화면 갱신!! (모니터에 현재 상태를 그려준다)
-	DrawBasicTalkBox(x, y);			--기본 대화 상자 생성 기본적으로 양의 정수값. 음의 정수값 나오면 0, 0에 그릴ㄹ껄?
+	Version();
+	SetSCNSize();
+	ClearScreen();
+	Blt();
 --]] 
 
 
@@ -23,9 +22,8 @@
 function main()
 	SetSCNSize()
 	ClearScreen()
-	DrawBasicTalkBox(10, 5)
 	Blt()
-	
+	 
 end
 
 

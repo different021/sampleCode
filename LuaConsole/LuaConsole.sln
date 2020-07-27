@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30002.166
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LuaConsole", "LuaConsole\LuaConsole.vcxproj", "{99BCA41E-8A48-4C78-9FDC-029B7E41A83B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A4B1CEB0-9DD5-4FB4-83BC-80A18AB6A92E} = {A4B1CEB0-9DD5-4FB4-83BC-80A18AB6A92E}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LuaDLL", "LuaDLL\LuaDLL.vcxproj", "{A4B1CEB0-9DD5-4FB4-83BC-80A18AB6A92E}"
 EndProject

@@ -111,6 +111,9 @@
     <ClInclude Include="lua-5.4.0\src\lzio.h">
       <Filter>Lua\src</Filter>
     </ClInclude>
+    <ClInclude Include="StaticData.h">
+      <Filter>Lua</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -217,6 +220,9 @@
     </ClCompile>
     <ClCompile Include="lua-5.4.0\src\lzio.c">
       <Filter>Lua\src</Filter>
+    </ClCompile>
+    <ClCompile Include="StaticData.cpp">
+      <Filter>Lua</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

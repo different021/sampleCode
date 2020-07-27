@@ -3,27 +3,33 @@
 
 #include <iostream>
 #include <Windows.h>
-
-typedef int (*pFunctionDLL)();
-pFunctionDLL Lua_Init = NULL;
-pFunctionDLL Lua_Process = NULL;
-pFunctionDLL Lua_Release = NULL;
-
-void Load_FunctionsDLL(HINSTANCE hIns);
+#include "LuaFunctions.h"
 
 int main()
 {
+
 	HINSTANCE hIns = LoadLibrary(L"DLL/LuaDLL.dll");
 	if (!hIns)
 	{
 		hIns = LoadLibrary(L"LuaDLL.dll");
+		if (!hIns)
+		{
+			printf("Fail to loadLibrary\n");
+		}
 		//__debugbreak();
 	}
 
-
+	//DLL 함수 로딩
 	Load_FunctionsDLL(hIns);
 
-	if ( !Lua_Init() )
+	HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (!hOutput)
+	{
+		//쓰기 가능한 스크린 핸들 획득 실패
+		printf("FAIL TO GetStdHandle() to write enable Handle");
+	}
+
+	if (!Lua_Init(hOutput))
 	{
 		//초기화 실패 예외 처리 추가.
 		printf("Fail to Init\n\n\n");
@@ -37,21 +43,6 @@ int main()
 
 }
 
-
-void Load_FunctionsDLL(HINSTANCE hIns)
-{
-	Lua_Init = (pFunctionDLL)GetProcAddress(hIns, "Lua_Init");
-	if (!Lua_Init)
-		__debugbreak();
-
-	Lua_Process = (pFunctionDLL)GetProcAddress(hIns, "Lua_Process");
-	if (!Lua_Process)
-		__debugbreak();
-
-	Lua_Release = (pFunctionDLL)GetProcAddress(hIns, "Lua_Release");
-	if (!Lua_Release)
-		__debugbreak();
-}
 
 // 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴
 // 프로그램 디버그: <F5> 키 또는 [디버그] > [디버깅 시작] 메뉴

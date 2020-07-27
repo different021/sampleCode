@@ -1,4 +1,5 @@
 #include "HG_Lua.h"
+#include "StaticData.h"
 
 extern "C" {
 #include "lua.h"
@@ -24,13 +25,25 @@ TCHAR LUA_Version[] = L"5.1.4";
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+HANDLE g_hScreen;
+
 lua_State* g_pLuaState = NULL;
 
 //시작파일 - > 바꿀수 있도록 수정 할 예정.
 #define LUA_FILE_  "Start.lua"			
 
+TCHAR* g_pBackBuffer = NULL;			//백버퍼
+TCHAR* g_pBackGround = NULL;			//배경화면
 
+struct SCREEN_SIZE
+{
+	INT width;
+	INT height;
+};
 
+SCREEN_SIZE g_ScreenSize = { 120, 40 };
+
+COORD pos = {};
 
 //extern "C" int _lg_Version(lua_State* ls)
 LUA_GLUE_ int _lg_Version(lua_State* ls)
@@ -44,14 +57,77 @@ LUA_GLUE_ int _lg_Version(lua_State* ls)
 	return 0;
 }
 
-LUA_GLUE_ int _lg_Test(lua_State* ls)
+LUA_GLUE_ int _lg_SetScreenSize(lua_State* ls)
 {
+	DWORD size = g_ScreenSize.width * g_ScreenSize.height;
+	g_pBackBuffer = new TCHAR[size];
 	
-	printf("TestFunction\n\n");
 	
+	//백버퍼 초기화
+	g_pBackGround = new TCHAR[size];
+	for (DWORD i = 0; i < size; i++)
+	{
+		g_pBackGround[i] = L'.';
+	}
+
+
+	printf("SetScreenSize\n");
+	OutputDebugStringW(L"LUA_GLUE_ SetScreenSize");
+	
+	
+	return 0;					//문제 없을시 0 리턴; 왜냐면 그것이 약속이니까
+}
+
+
+LUA_GLUE_ int _lg_ClearSCN(lua_State* ls)
+{
+	DWORD size = g_ScreenSize.width * g_ScreenSize.height;
+	memcpy(g_pBackBuffer, g_pBackGround, sizeof(TCHAR) * size);
+
+	printf("Clear Screen\n");
+
 	return 0;
 }
 
+LUA_GLUE_ int _lg_Blt(lua_State* ls)
+{
+	printf("Blt\n\n");
+	DWORD size = g_ScreenSize.width * g_ScreenSize.height;
+
+	DWORD length = 0;
+	WriteConsoleOutputCharacter(g_hScreen, g_pBackBuffer, size, pos, &length);
+
+	return 0;
+}
+
+LUA_GLUE_ int _lg_DrawBasicTalkBox(lua_State* ls)
+{
+	DWORD x = (DWORD)lua_tonumber(ls, 1);	//1번 파라미터.얻기 
+	DWORD y = (DWORD)lua_tonumber(ls, 2);	//2번 파라미터.얻기 
+
+	DWORD scnWidth = g_ScreenSize.width;
+	DWORD scnHeight = g_ScreenSize.height;
+
+	STATIC_DATA* pData = &basic_TalkBox;
+
+	x = max(x, 0);
+	y = max(y, 0);
+	
+	x = min(x, scnWidth - 1);
+	y = min(y, scnHeight - 1);
+
+	COORD dest = { x, y };
+	
+	for (int i = 0; i < pData->height; i++)
+	{
+		for (int j = 0; j < pData->width; j++)
+		{
+			g_pBackBuffer[x + j + scnWidth * (i + y)] = pData->pData[j + pData->width * i];
+		}
+	}
+
+	return 0;
+};
 
 //////////////////////////////////////////////
 //
@@ -61,7 +137,10 @@ LUA_GLUE_ int _lg_Test(lua_State* ls)
 static luaL_reg GlueFunctions[] =
 {
 	{"Version",			_lg_Version },
-	{"Test",			_lg_Test },
+	{"SetSCNSize",		_lg_SetScreenSize },
+	{"ClearScreen",     _lg_ClearSCN},
+	{"Blt",				_lg_Blt },
+	{"DrawBasicTalkBox",_lg_DrawBasicTalkBox},
 
 	{NULL,				NULL}
 };
@@ -126,15 +205,27 @@ bool Lua_StartFile()
 	return TRUE;
 }
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//							DLL
+//
 ///////////////////////////////////////////////////////////////////////////////
 //
 // 루아 초기화 함수 : Lua.5.1.4 기준. 2020.07.26 제작 -> 추후 변경 : dll만 별도 업데이트 테스트하기위해 기존 버젼 유지.
-//
+//	
 ///////////////////////////////////////////////////////////////////////////////
 
-int Lua_Init()
+LUA_API int Lua_Init(HANDLE hScreen)
 {
 	int bResult = TRUE;
+	g_hScreen = hScreen;					//그릴 대상이 되는 타겟 핸들 셋팅
+	if (!g_hScreen)
+	{
+		//스크린 핸들 획득 실패
+		printf("Lua_init : Fail To Get Screen HANDLE");
+	}
 
 	// 루아 환경을 초기화 합니다.
 	//  
@@ -169,8 +260,6 @@ int Lua_Process()
 	//
 	// 루아 파일 실행. 
 	//
-
-
 
 	printf("Lua Process\n\n");
 
