@@ -13,39 +13,44 @@ void Load_FunctionsDLL(HINSTANCE hIns);
 
 int main()
 {
-    HINSTANCE hIns = LoadLibrary(L"DLL/LuaDLL.dll");
-    if (!hIns)
-    {
-        hIns = LoadLibrary(L"LuaDLL.dll");
-        //__debugbreak();
-    }
-        
-
-    Load_FunctionsDLL(hIns);
-
-    Lua_Init();
-    Lua_Process();
-    Lua_Release();
+	HINSTANCE hIns = LoadLibrary(L"DLL/LuaDLL.dll");
+	if (!hIns)
+	{
+		hIns = LoadLibrary(L"LuaDLL.dll");
+		//__debugbreak();
+	}
 
 
-    getchar();
+	Load_FunctionsDLL(hIns);
+
+	if ( !Lua_Init() )
+	{
+		//초기화 실패 예외 처리 추가.
+		printf("Fail to Init\n\n\n");
+	}
+
+	Lua_Process();
+	Lua_Release();
+
+
+	getchar();
 
 }
 
 
 void Load_FunctionsDLL(HINSTANCE hIns)
 {
-    Lua_Init = (pFunctionDLL)GetProcAddress(hIns, "Lua_Init");
-    if (!Lua_Init)
-        __debugbreak();
+	Lua_Init = (pFunctionDLL)GetProcAddress(hIns, "Lua_Init");
+	if (!Lua_Init)
+		__debugbreak();
 
-    Lua_Process = (pFunctionDLL)GetProcAddress(hIns, "Lua_Process");
-    if (!Lua_Process)
-        __debugbreak();
-    
-    Lua_Release = (pFunctionDLL)GetProcAddress(hIns, "Lua_Release");
-    if (!Lua_Release)
-        __debugbreak();
+	Lua_Process = (pFunctionDLL)GetProcAddress(hIns, "Lua_Process");
+	if (!Lua_Process)
+		__debugbreak();
+
+	Lua_Release = (pFunctionDLL)GetProcAddress(hIns, "Lua_Release");
+	if (!Lua_Release)
+		__debugbreak();
 }
 
 // 프로그램 실행: <Ctrl+F5> 또는 [디버그] > [디버깅하지 않고 시작] 메뉴

@@ -26,7 +26,46 @@ TCHAR LUA_Version[] = L"5.1.4";
 
 lua_State* g_pLuaState = NULL;
 
-#define LUA_FILE_  "Demo.lua"			
+//시작파일 - > 바꿀수 있도록 수정 할 예정.
+#define LUA_FILE_  "Start.lua"			
+
+
+
+
+//extern "C" int _lg_Version(lua_State* ls)
+LUA_GLUE_ int _lg_Version(lua_State* ls)
+{
+	puts("--------------------------------------");
+	puts("루아 데모엔진 v1.0 (Lua v5.1.4)");
+	puts(LUA_VERSION);
+	puts(LUA_COPYRIGHT);
+	puts(LUA_AUTHORS);
+	puts("--------------------------------------");
+	return 0;
+}
+
+LUA_GLUE_ int _lg_Test(lua_State* ls)
+{
+	
+	printf("TestFunction\n\n");
+	
+	return 0;
+}
+
+
+//////////////////////////////////////////////
+//
+//루아 스크립트에서 사용 할 수 있는 함수들.
+//
+/////////////////////////////////////////////
+static luaL_reg GlueFunctions[] =
+{
+	{"Version",			_lg_Version },
+	{"Test",			_lg_Test },
+
+	{NULL,				NULL}
+};
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -62,6 +101,30 @@ void Lua_Error(lua_State* L, const char* fmt, ...)
 	
 }
 
+//루아 스크립트에서 함수를 사용 할 수 있도록 등록
+int Lua_functionRegist()
+{
+
+	for (int i = 0; GlueFunctions[i].name; i++)
+	{
+		lua_register(g_pLuaState, GlueFunctions[i].name, GlueFunctions[i].func);
+	}
+	
+	//문제 없으면 0 반환.
+	return 0;
+}
+
+bool Lua_StartFile()
+{
+	//luaL_dofile 오류가 없으면 0 있으면 1 리턴.
+	if (luaL_dofile(g_pLuaState, LUA_FILE_) != 0)
+	{
+		Lua_Error(g_pLuaState, "%s", lua_tostring(g_pLuaState, -1));
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -71,20 +134,26 @@ void Lua_Error(lua_State* L, const char* fmt, ...)
 
 int Lua_Init()
 {
+	int bResult = TRUE;
+
 	// 루아 환경을 초기화 합니다.
 	//  
 	g_pLuaState = luaL_newstate();			//신형 5.1.x 방법.★
 	luaL_openlibs(g_pLuaState);
 
-	printf("Lua Init\n\n");
-
+	//printf("Lua Init\n\n");
 
 	// 이 루프는 모든 루아글루 함수를 루아환경에 등록.
-	//
-	/*for(int i=0; GlueFunctions[i].name; i++)
+	if (!Lua_functionRegist())
 	{
-		lua_register(g_pLuaState, GlueFunctions[i].name, GlueFunctions[i].func);
-	}*/
+		bResult = FALSE;
+	}
+
+
+	if (!Lua_StartFile())
+	{
+		bResult = FALSE;
+	}
 
 	return TRUE;
 }
@@ -100,11 +169,7 @@ int Lua_Process()
 	//
 	// 루아 파일 실행. 
 	//
-	if (luaL_dofile(g_pLuaState, LUA_FILE_) != 0)
-	{
-		Lua_Error(g_pLuaState, "%s", lua_tostring(g_pLuaState, -1));	//에러메세지 체크.	
-		printf("Lua Process Fail\n\n\n");
-	}
+
 
 
 	printf("Lua Process\n\n");
