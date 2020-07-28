@@ -19,6 +19,9 @@
     <Filter Include="Lua\src">
       <UniqueIdentifier>{20831795-41aa-4458-8443-0ab64bc2ad46}</UniqueIdentifier>
     </Filter>
+    <Filter Include="staticData">
+      <UniqueIdentifier>{8ec8ec1a-1c4f-43d5-a99e-072490655953}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -112,7 +115,7 @@
       <Filter>Lua\src</Filter>
     </ClInclude>
     <ClInclude Include="StaticData.h">
-      <Filter>Lua</Filter>
+      <Filter>staticData</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -222,7 +225,7 @@
       <Filter>Lua\src</Filter>
     </ClCompile>
     <ClCompile Include="StaticData.cpp">
-      <Filter>Lua</Filter>
+      <Filter>staticData</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

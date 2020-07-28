@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <Windows.h>
+#include <tchar.h>
 #include "LuaFunctions.h"
 
 int main()
@@ -22,7 +23,7 @@ int main()
 	//DLL 함수 로딩
 	Load_FunctionsDLL(hIns);
 
-	HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);				//GET TO THE WRITE RIGHT
 	if (!hOutput)
 	{
 		//쓰기 가능한 스크린 핸들 획득 실패
@@ -32,7 +33,7 @@ int main()
 	if (!Lua_Init(hOutput))
 	{
 		//초기화 실패 예외 처리 추가.
-		printf("Fail to Init\n\n\n");
+		_tprintf(L"루아 초기화 실패\n\n\n");
 	}
 
 	Lua_Process();
