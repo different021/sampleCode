@@ -51,6 +51,28 @@ SCREEN_SIZE g_ScreenSize = { 120, 40 };
 COORD pos = {};
 
 
+
+//////////////////////////////////////////////
+//
+//내부 사용 함수 선언
+//
+/////////////////////////////////////////////
+
+//크기 설정할 수 있게.. 수정
+int CreateBackBuffer(INT width, INT height)
+{	
+	//백버퍼 생성.
+	DWORD size = width * height;
+	g_pBackGround = new TCHAR[size];
+	for (DWORD i = 0; i < size; i++)
+	{
+		g_pBackGround[i] = L'.';
+	}
+	
+	return 0;
+}
+
+
 //extern "C" int _lg_Version(lua_State* ls)
 LUA_GLUE_ int _lg_Version(lua_State* ls)
 {
@@ -66,17 +88,18 @@ LUA_GLUE_ int _lg_Version(lua_State* ls)
 
 LUA_GLUE_ int _lg_SetScreenSize(lua_State* ls)
 {
+	//파라미터 2개 받아서 화면 초기화
+	DWORD width = (DWORD)lua_tonumber(ls, 1);
+	DWORD height = (DWORD)lua_tonumber(ls, 2);
+	g_ScreenSize.width = width;
+	g_ScreenSize.height = height;
+
+
 	DWORD size = g_ScreenSize.width * g_ScreenSize.height;
 	g_pBackBuffer = new TCHAR[size];
 
-
 	//백버퍼 초기화
-	g_pBackGround = new TCHAR[size];
-	for (DWORD i = 0; i < size; i++)
-	{
-		g_pBackGround[i] = L'.';
-	}
-
+	CreateBackBuffer(g_ScreenSize.width, g_ScreenSize.height);
 
 	printf("SetScreenSize\n");
 	OutputDebugStringW(L"LUA_GLUE_ SetScreenSize");
@@ -113,6 +136,8 @@ LUA_GLUE_ int _lg_DrawBasicTalkBox(lua_State* ls)
 	DWORD x = (DWORD)lua_tonumber(ls, 1);	//1번 파라미터.얻기 
 	DWORD y = (DWORD)lua_tonumber(ls, 2);	//2번 파라미터.얻기 
 
+	
+
 	DWORD scnWidth = g_ScreenSize.width;
 	DWORD scnHeight = g_ScreenSize.height;
 
@@ -137,13 +162,19 @@ LUA_GLUE_ int _lg_DrawBasicTalkBox(lua_State* ls)
 	return 0;
 };
 
-//크기 설정할 수 있게.. 수정
-LUA_GLUE_ int _lg_CreateBackBuffer(lua_State* ls)
+
+
+LUA_GLUE_ int _lg_SetTime(lua_State* ls)
 {
-	//백버퍼 생성.
+	
 	return 0;
 }
 
+LUA_GLUE_ int _lg_PutFPS(lua_State* ls)
+{
+
+	return 0;
+}
 
 
 //////////////////////////////////////////////

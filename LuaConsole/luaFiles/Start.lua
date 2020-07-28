@@ -21,9 +21,12 @@
 -- Lua 일반 함수.
 ------------------------------------------------------------------------
 function main()
-	SetSCNSize()
-	ClearScreen()
-	DrawBasicTalkBox(10, 5)
+	SetSCNSize(120, 40)			--120, 40에서 정상작동 수정 필요
+	ClearScreen()				--'.' 으로 초기화 받을수 있도록 수정.
+	DrawBasicTalkBox(10, 0)		--기본으로 제공되는 박스 출력.	
+	DrawBasicTalkBox(10, 10)
+	DrawBasicTalkBox(10, 20)
+	DrawBasicTalkBox(10, 30)
 	Blt()
 	
 end
