@@ -4,12 +4,53 @@
 #include "soundclass.h"
 
 
+/////////////////////////////////////////////////
+//	GLOBAL
+////////////////////////////////////////////////
+
+SoundClass* g_pSound = NULL;
+
+/////////////////////////////////////////////////
+//	함수
+////////////////////////////////////////////////
+BOOL CALLBACK DSEnumCallback(LPGUID lpGuid, LPCTSTR lpcstrDescription, LPCTSTR lpcstrModule, LPVOID lpContext);
+
+
+
+void InitSound_(HWND hWnd)
+{
+	g_pSound = new SoundClass;
+	g_pSound->Initialize(hWnd);
+
+}
+
+void CleanupSound_()
+{
+	g_pSound->Shutdown();
+}
+
+bool PlaySound_(eSOUND num)
+{
+	if (num-1 > eSOUND::eSOUND_MAX_)
+		return FALSE;
+
+	g_pSound->PlayWaveFile(num);
+	
+	return TRUE;
+}
+
+
+
+////////////////////////////////////////////////
+// Member Func Area
+///////////////////////////////////////////////
+
 SoundClass::SoundClass()
 {
 	m_DirectSound = 0;
 	m_primaryBuffer = 0;
-	m_secondaryBuffer1[0] = 0;
-	m_secondaryBuffer1[1] = 0;
+	m_secondaryBuffer[0] = 0;
+	m_secondaryBuffer[1] = 0;
 }
 
 
@@ -27,6 +68,8 @@ bool SoundClass::Initialize(HWND hwnd)
 {
 	bool result;
 
+	
+	DirectSoundEnumerate((LPDSENUMCALLBACK)DSEnumCallback, (LPVOID)&m_vSoundDevice);
 
 	// Initialize direct sound and the primary sound buffer.
 	result = InitializeDirectSound(hwnd);
@@ -36,13 +79,13 @@ bool SoundClass::Initialize(HWND hwnd)
 	}
 
 	// Load a wave audio file onto a secondary buffer.
-	result = LoadWaveFile(L"../data/sound01.wav", &m_secondaryBuffer1[0]);
+	result = LoadWaveFile(L"../data/sound01.wav", &m_secondaryBuffer[0]);
 	if(!result)
 	{
 		return false;
 	}
 
-	result = LoadWaveFile(L"../data/sound02_10m.wav", &m_secondaryBuffer1[1]);
+	result = LoadWaveFile(L"../data/sound02_10m.wav", &m_secondaryBuffer[1]);
 	if (!result)
 	{
 		return false;
@@ -67,7 +110,7 @@ void SoundClass::Shutdown()
 	// Release the secondary buffer.
 	for (int i = 0; i < 2; i++)
 	{
-		ShutdownWaveFile(&m_secondaryBuffer1[i]);
+		ShutdownWaveFile(&m_secondaryBuffer[i]);
 	}
 	
 
@@ -80,42 +123,65 @@ void SoundClass::Shutdown()
 
 bool SoundClass::InitializeDirectSound(HWND hwnd)
 {
-	HRESULT result;
-	DSBUFFERDESC bufferDesc;
-	WAVEFORMATEX waveFormat;
+	HRESULT hr;
 
+	hr = CreateDevice(hwnd);
+	if (FAILED(hr))
+		return FALSE;
+
+	hr = CreateBuffer(m_primaryBuffer);
+	if (FAILED(hr))
+		return FALSE;
+
+	return TRUE;
+}
+
+bool SoundClass::CreateDevice(HWND hWnd)
+{
+	HRESULT hr;
 
 	// Initialize the direct sound interface pointer for the default sound device.
-	result = DirectSoundCreate8(NULL, &m_DirectSound, NULL);
-	if(FAILED(result))
+	hr = DirectSoundCreate8(NULL, &m_DirectSound, NULL);														//첫번째 인자가 NULL인 경우 디폴트 디바이스
+	if (FAILED(hr))
 	{
-		return false;
+		return FALSE;
 	}
 
-	// Set the cooperative level to priority so the format of the primary sound buffer can be modified.
-	result = m_DirectSound->SetCooperativeLevel(hwnd, DSSCL_PRIORITY);
-	if(FAILED(result))
+	// Set the cooperative level to priority so the format of the primary sound buffer can be modified.			 https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ee416818(v=vs.85)
+	hr = m_DirectSound->SetCooperativeLevel(hWnd, DSSCL_PRIORITY);
+	if (FAILED(hr))
 	{
-		return false;
+		return FALSE;
 	}
+
+	return TRUE;
+}
+
+bool SoundClass::CreateBuffer(IDirectSoundBuffer* &pSoundBuffer)
+{
+	HRESULT hr = S_OK;
+	DSBUFFERDESC bufferDesc;
 
 	// Setup the primary buffer description.
 	bufferDesc.dwSize = sizeof(DSBUFFERDESC);
-	bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME;
+	bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME; //| DSBCAPS_CTRLPOSITIONNOTIFY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLPOSITIONNOTIFY;
 	bufferDesc.dwBufferBytes = 0;
 	bufferDesc.dwReserved = 0;
 	bufferDesc.lpwfxFormat = NULL;
 	bufferDesc.guid3DAlgorithm = GUID_NULL;
 
 	// Get control of the primary sound buffer on the default sound device.
-	result = m_DirectSound->CreateSoundBuffer(&bufferDesc, &m_primaryBuffer, NULL);
-	if(FAILED(result))
+	hr = m_DirectSound->CreateSoundBuffer(&bufferDesc, &pSoundBuffer, NULL);
+	if (FAILED(hr))
 	{
+		hr = pSoundBuffer->QueryInterface(IID_IDirectSoundBuffer8, (LPVOID*)pSoundBuffer);
 		return false;
 	}
 
 	// Setup the format of the primary sound bufffer.
 	// In this case it is a .WAV file recorded at 44,100 samples per second in 16-bit stereo (cd audio format).
+	WAVEFORMATEX waveFormat;
+	memset(&waveFormat, 0, sizeof(WAVEFORMATEX));
 	waveFormat.wFormatTag = WAVE_FORMAT_PCM;
 	waveFormat.nSamplesPerSec = 44100;
 	waveFormat.wBitsPerSample = 16;
@@ -123,10 +189,10 @@ bool SoundClass::InitializeDirectSound(HWND hwnd)
 	waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
 	waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
 	waveFormat.cbSize = 0;
-	
+
 	// Set the primary buffer to be the wave format specified.
-	result = m_primaryBuffer->SetFormat(&waveFormat);
-	if(FAILED(result))
+	hr = pSoundBuffer->SetFormat(&waveFormat);
+	if (FAILED(hr))
 	{
 		return false;
 	}
@@ -340,25 +406,43 @@ bool SoundClass::PlayWaveFile(int NUM)
 
 
 	// Set position at the beginning of the sound buffer.
-	result = m_secondaryBuffer1[NUM]->SetCurrentPosition(0);
+	result = m_secondaryBuffer[NUM]->SetCurrentPosition(0);
 	if(FAILED(result))
 	{
 		return false;
 	}
 
 	// Set volume of the buffer to 100%.
-	result = m_secondaryBuffer1[NUM]->SetVolume(DSBVOLUME_MAX);
+	result = m_secondaryBuffer[NUM]->SetVolume(DSBVOLUME_MAX);
 	if(FAILED(result))
 	{
 		return false;
 	}
 
 	// Play the contents of the secondary sound buffer.
-	result = m_secondaryBuffer1[NUM]->Play(0, 0, 0);
+	result = m_secondaryBuffer[NUM]->Play(0, 0, 0);
 	if(FAILED(result))
 	{
 		return false;
 	}
 
 	return true;
+}
+
+
+BOOL CALLBACK DSEnumCallback(LPGUID lpGuid, LPCTSTR lpcstrDescription, LPCTSTR lpcstrModule, LPVOID lpContext)
+{
+	auto vSoundDevice = reinterpret_cast<std::vector<DeviceTuple>*>(lpContext);
+	std::wcout.imbue(std::locale(""));
+	std::wcout << lpcstrDescription << std::endl;
+
+	GUID guid;
+	memset(&guid, 0x00, sizeof(guid));
+	if (nullptr != lpGuid)
+	{
+		memcpy(&guid, lpGuid, sizeof(guid));
+	}
+	vSoundDevice->push_back(std::make_tuple(guid, std::wstring(lpcstrDescription), std::wstring(lpcstrModule)));
+
+	return TRUE;
 }

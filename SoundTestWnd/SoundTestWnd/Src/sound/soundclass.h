@@ -20,26 +20,56 @@
 #include <mmsystem.h>
 #include <dsound.h>
 #include <stdio.h>
+#include <iostream>
+#include <vector>
+#include <tuple>
 
 
-////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////
 //
 // 이 부분을 수정해서 사용.
 //
-////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
 
-enum
+enum eSOUND
 {
-	eBGM_STAGE01_,
+	eBGM_STAGE01_ = 0,
 	eBGM_STAGE02_,
 
 	eSOUND_MAX_,
 };
 
 
-///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////
+//선언 및 정의
+///////////////////////////////////////////////////////////////////
+
+typedef std::tuple<GUID, std::wstring, std::wstring> DeviceTuple;
+class SoundClass;
+
+
+
+
+/////////////////////////////////////////////
+// GLOBAL
+////////////////////////////////////////////
+
+extern SoundClass* g_pSound;
+
+void InitSound_(HWND);
+void CleanupSound_();
+bool PlaySound_(eSOUND);
+
+
+
+
+////////////////////////////////////////////
 // Class name: SoundClass
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////
+
 class SoundClass
 {
 private:
@@ -53,7 +83,7 @@ private:
 		unsigned short audioFormat;			// PCM = 1 (2byte) little-Endian
 		unsigned short numChannels;			// 체널 수. mono : 1 , Stereo : 2
 		unsigned long sampleRate;			// 1초를 몇개의 조각으로 세분화. 
-		unsigned long bytesPerSecond;		// SampleRate * numChannels * BitsPerSample / 8; 소리가 1초 몇 바이트 소모?
+		unsigned long  bytesPerSecond;		// SampleRate * numChannels * BitsPerSample / 8; 소리가 1초 몇 바이트 소모?
 		unsigned short blockAlign;			// 전체 채널을 포함하는 한 샘플의 크기
 		unsigned short bitsPerSample;		// 한개의 샘플은 몇개의 비트로 나누는가.
 		char dataChunkId[4];				// 'data'	//문자열들은 BigEndian
@@ -69,21 +99,30 @@ public:
 	void Shutdown();
 	bool PlayWaveFile(int NUM);
 
+
 private:
 	bool InitializeDirectSound(HWND);
+	bool CreateDevice(HWND);
+	bool CreateBuffer(IDirectSoundBuffer*&);
 	void ShutdownDirectSound();
 
 	bool LoadWaveFile(const TCHAR*, IDirectSoundBuffer8**);
 	void ShutdownWaveFile(IDirectSoundBuffer8**);
 
 private:
-	
+
+	std::vector<DeviceTuple> m_vSoundDevice;
+
 	IDirectSound8* m_DirectSound;
 	IDirectSoundBuffer* m_primaryBuffer;
-	IDirectSoundBuffer8* m_secondaryBuffer1[2];
+	IDirectSoundBuffer8* m_secondaryBuffer[eSOUND_MAX_];
 };
 
+
+
 #endif
+
+
 
 
 ///////////////////////////////////////////////////////////////////

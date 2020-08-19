@@ -6,7 +6,7 @@
 
 #include "Src\sound\soundclass.h"
 
-SoundClass* g_pSound;
+
 
 
 #define MAX_LOADSTRING 100
@@ -45,8 +45,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
-    g_pSound = new SoundClass;
-    g_pSound->Initialize(g_hWnd);
+    //사운드 초기화
+    InitSound_(g_hWnd);
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SOUNDTESTWND));
 
@@ -62,7 +62,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
     
-    g_pSound->Shutdown();
+    //사운드 제거
+    CleanupSound_();
+   
 
     return (int) msg.wParam;
 }
