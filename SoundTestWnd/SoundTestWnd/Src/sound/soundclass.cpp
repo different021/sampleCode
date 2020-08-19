@@ -8,7 +8,8 @@ SoundClass::SoundClass()
 {
 	m_DirectSound = 0;
 	m_primaryBuffer = 0;
-	m_secondaryBuffer1 = 0;
+	m_secondaryBuffer1[0] = 0;
+	m_secondaryBuffer1[1] = 0;
 }
 
 
@@ -35,18 +36,27 @@ bool SoundClass::Initialize(HWND hwnd)
 	}
 
 	// Load a wave audio file onto a secondary buffer.
-	result = LoadWaveFile("../data/sound01.wav", &m_secondaryBuffer1);
+	result = LoadWaveFile(L"../data/sound01.wav", &m_secondaryBuffer1[0]);
 	if(!result)
 	{
 		return false;
 	}
 
+	result = LoadWaveFile(L"../data/sound02_10m.wav", &m_secondaryBuffer1[1]);
+	if (!result)
+	{
+		return false;
+	}
+
+
+	/*
 	// Play the wave file now that it has been loaded.
 	result = PlayWaveFile();
 	if(!result)
 	{
 		return false;
 	}
+	*/
 
 	return true;
 }
@@ -55,7 +65,11 @@ bool SoundClass::Initialize(HWND hwnd)
 void SoundClass::Shutdown()
 {
 	// Release the secondary buffer.
-	ShutdownWaveFile(&m_secondaryBuffer1);
+	for (int i = 0; i < 2; i++)
+	{
+		ShutdownWaveFile(&m_secondaryBuffer1[i]);
+	}
+	
 
 	// Shutdown the Direct Sound API.
 	ShutdownDirectSound();
@@ -109,7 +123,7 @@ bool SoundClass::InitializeDirectSound(HWND hwnd)
 	waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
 	waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
 	waveFormat.cbSize = 0;
-
+	
 	// Set the primary buffer to be the wave format specified.
 	result = m_primaryBuffer->SetFormat(&waveFormat);
 	if(FAILED(result))
@@ -141,7 +155,7 @@ void SoundClass::ShutdownDirectSound()
 }
 
 
-bool SoundClass::LoadWaveFile(const char* filename, IDirectSoundBuffer8** secondaryBuffer)
+bool SoundClass::LoadWaveFile(const TCHAR* filename, IDirectSoundBuffer8** secondaryBuffer)
 {
 	int error;
 	FILE* filePtr;
@@ -157,7 +171,7 @@ bool SoundClass::LoadWaveFile(const char* filename, IDirectSoundBuffer8** second
 
 
 	// Open the wave file in binary.
-	error = fopen_s(&filePtr, filename, "rb");
+	error = _wfopen_s(&filePtr, filename, L"rb");
 	if(error != 0)
 	{
 		return false;
@@ -206,7 +220,7 @@ bool SoundClass::LoadWaveFile(const char* filename, IDirectSoundBuffer8** second
 	// Check that the wave file was recorded at a sample rate of 44.1 KHz.
 	if(waveFileHeader.sampleRate != 44100)
 	{
-		return false;
+		//return false;
 	}
 
 	// Ensure that the wave file was recorded in 16 bit format.
@@ -224,7 +238,8 @@ bool SoundClass::LoadWaveFile(const char* filename, IDirectSoundBuffer8** second
 
 	// Set the wave format of secondary buffer that this wave file will be loaded onto.
 	waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-	waveFormat.nSamplesPerSec = 44100;
+	//waveFormat.nSamplesPerSec = 44100;
+	waveFormat.nSamplesPerSec = waveFileHeader.sampleRate;
 	waveFormat.wBitsPerSample = 16;
 	waveFormat.nChannels = 2;
 	waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
@@ -319,27 +334,27 @@ void SoundClass::ShutdownWaveFile(IDirectSoundBuffer8** secondaryBuffer)
 }
 
 
-bool SoundClass::PlayWaveFile()
+bool SoundClass::PlayWaveFile(int NUM)
 {
 	HRESULT result;
 
 
 	// Set position at the beginning of the sound buffer.
-	result = m_secondaryBuffer1->SetCurrentPosition(0);
+	result = m_secondaryBuffer1[NUM]->SetCurrentPosition(0);
 	if(FAILED(result))
 	{
 		return false;
 	}
 
 	// Set volume of the buffer to 100%.
-	result = m_secondaryBuffer1->SetVolume(DSBVOLUME_MAX);
+	result = m_secondaryBuffer1[NUM]->SetVolume(DSBVOLUME_MAX);
 	if(FAILED(result))
 	{
 		return false;
 	}
 
 	// Play the contents of the secondary sound buffer.
-	result = m_secondaryBuffer1->Play(0, 0, 0);
+	result = m_secondaryBuffer1[NUM]->Play(0, 0, 0);
 	if(FAILED(result))
 	{
 		return false;

@@ -6,6 +6,9 @@
 
 #include "Src\sound\soundclass.h"
 
+SoundClass* g_pSound;
+
+
 #define MAX_LOADSTRING 100
 
 HWND g_hWnd = NULL;
@@ -42,8 +45,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
-    SoundClass* pSound = new SoundClass;
-    pSound->Initialize(g_hWnd);
+    g_pSound = new SoundClass;
+    g_pSound->Initialize(g_hWnd);
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SOUNDTESTWND));
 
@@ -59,7 +62,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         }
     }
     
-    pSound->Shutdown();
+    g_pSound->Shutdown();
 
     return (int) msg.wParam;
 }
@@ -148,6 +151,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+           
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
             }
@@ -164,6 +168,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
+
+    case WM_KEYUP:
+        switch (wParam)
+        {
+        case 'A':
+            g_pSound->PlayWaveFile(0);
+            break;
+
+        case 'S':
+            g_pSound->PlayWaveFile(1);
+            break;
+
+        default:
+            break;
+        }
+
+        
+        break;
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -189,3 +212,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return (INT_PTR)FALSE;
 }
+
+
+
