@@ -35,8 +35,9 @@
 
 enum eSOUND
 {
-	eBGM_STAGE01_ = 0,
+	eBGM_STAGE01_ = 0,			//명확한 이름 추천. 첫번째는 0.
 	eBGM_STAGE02_,
+	eBGM_STAGE03_,
 
 	eSOUND_MAX_,
 };
@@ -46,6 +47,9 @@ enum eSOUND
 ///////////////////////////////////////////////////////////////////
 //선언 및 정의
 ///////////////////////////////////////////////////////////////////
+
+#define PLAY_LOOP DSBPLAY_LOOPING 
+#define PLAY_ONCE 0
 
 typedef std::tuple<GUID, std::wstring, std::wstring> DeviceTuple;
 class SoundClass;
@@ -61,7 +65,7 @@ extern SoundClass* g_pSound;
 
 void InitSound_(HWND);
 void CleanupSound_();
-bool PlaySound_(eSOUND);
+bool PlaySound_(eSOUND, DWORD);
 
 
 
@@ -96,8 +100,8 @@ public:
 	~SoundClass();
 
 	bool Initialize(HWND);
-	void Shutdown();
-	bool PlayWaveFile(eSOUND track);
+	void CleanUp();
+	bool PlayWaveFile(eSOUND track, DWORD dwFlag);
 	bool StopWaveFile(eSOUND track);
 
 	//Volume Control
@@ -111,24 +115,26 @@ private:
 	bool InitializeDirectSound(HWND);
 	bool CreateDevice(HWND);
 	bool CreateBuffer(IDirectSoundBuffer*&);
-	void ShutdownDirectSound();
 
-	bool LoadWaveFromINI(const TCHAR* fileName);
+	bool LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output);
 	bool LoadWaveFile(const TCHAR* szFileName);
 	bool LoadWaveFile(const TCHAR*, IDirectSoundBuffer8**);
-	void ShutdownWaveFile(IDirectSoundBuffer8**);
+
+	void ReleaseWaveFile(IDirectSoundBuffer8**);
+	void ReleaseDirectSound();
 
 private:	
 	std::vector<DeviceTuple> m_vSoundDevice;
 
 	LONG m_Vol;
 
-	IDirectSound8* m_DirectSound;
-	IDirectSoundBuffer* m_primaryBuffer;
-	//IDirectSoundBuffer8* m_secondaryBuffer[eSOUND_MAX_];
+	IDirectSound8* m_DirectSound;						
+	IDirectSoundBuffer* m_primaryBuffer;				//
 
-	//std::vector<CSoundWave*> m_SoundWaveList;
-	CSoundWave* m_SoundWaveList[eSOUND_MAX_];
+	std::vector<CSoundWave*> m_SoundWaveList;
+
+	TCHAR* pFileNameList;								//불러야하는 파일 네임 리스트. 파서를 분리할걸 그랫나?
+	INT m_iNumberOfFile;
 };
 
 

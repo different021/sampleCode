@@ -46,8 +46,7 @@ public:
 
 public:
 	//Play
-	bool PlayOnce();
-	bool PlayLoop();
+	bool Play(DWORD dwFlag);
 
 public:
 	//

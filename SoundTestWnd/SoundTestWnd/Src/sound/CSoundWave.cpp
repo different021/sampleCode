@@ -168,23 +168,13 @@ bool CSoundWave::LoadWaveFile(const TCHAR* fileName)
 	return TRUE;
 }
 
-bool CSoundWave::PlayOnce()
+bool CSoundWave::Play(DWORD dwFlag)
 {
 	// Set position at the beginning of the sound buffer.
 	m_pSecondaryBuffer->SetCurrentPosition(0);
 	// Set volume of the buffer to 100%.
 	m_pSecondaryBuffer->SetVolume(m_Vol);
-	m_pSecondaryBuffer->Play(0, 0, 0);
-	return TRUE;
-}
-
-bool CSoundWave::PlayLoop()
-{
-	// Set position at the beginning of the sound buffer.
-	m_pSecondaryBuffer->SetCurrentPosition(0);
-	// Set volume of the buffer to 100%.
-	m_pSecondaryBuffer->SetVolume(m_Vol);
-	m_pSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
+	m_pSecondaryBuffer->Play(0, 0, dwFlag);
 	return TRUE;
 }
 

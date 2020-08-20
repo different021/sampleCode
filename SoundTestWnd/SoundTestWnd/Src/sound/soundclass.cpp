@@ -37,15 +37,15 @@ void InitSound_(HWND hWnd)
 
 void CleanupSound_()
 {
-	g_pSound->Shutdown();
+	g_pSound->CleanUp();
 }
 
-bool PlaySound_(eSOUND num)
+bool PlaySound_(eSOUND num, DWORD dwFlag)
 {
 	if (num - 1 > eSOUND::eSOUND_MAX_)
 		return FALSE;
 
-	g_pSound->PlayWaveFile(num);
+	g_pSound->PlayWaveFile(num, dwFlag);
 
 	return TRUE;
 }
@@ -60,13 +60,8 @@ SoundClass::SoundClass()
 {
 	m_DirectSound = 0;
 	m_primaryBuffer = 0;
-	//m_Volume = DSBVOLUME_MAX;
 	m_Vol = 0;
-	//for (int i = 0; i < eSOUND_MAX_; i++)
-	//{
-	//	m_secondaryBuffer[i] = 0;
-	//}
-	//memset(m_WaveHeader, 0, sizeof(WaveHeaderType) * eSOUND_MAX_);
+	pFileNameList = NULL;
 }
 
 
@@ -77,6 +72,7 @@ SoundClass::SoundClass(const SoundClass& other)
 
 SoundClass::~SoundClass()
 {
+	CleanUp();
 }
 
 
@@ -84,7 +80,7 @@ bool SoundClass::Initialize(HWND hwnd)
 {
 	bool result;
 
-
+	//장치들을 확인한다. 사실 잘모르지만 일단 사용한다. 콘솔에서는 장치들 리스트를 출력해준다.
 	DirectSoundEnumerate((LPDSENUMCALLBACK)DSEnumCallback, (LPVOID)&m_vSoundDevice);
 
 	// Initialize direct sound and the primary sound buffer.
@@ -94,51 +90,33 @@ bool SoundClass::Initialize(HWND hwnd)
 		return false;
 	}
 
-	LoadWaveFromINI(L"../data/sound.ini");
-
-	/*
-	// Load a wave audio file onto a secondary buffer.
-	//result = LoadWaveFile(L"../data/sound01.wav", &m_secondaryBuffer[0]);
-	result = LoadWaveFile(L"../data/sound01.wav");
-
-	//result = LoadWaveFile()
+	result = LoadWaveFileNameFromINI(L"../sound/sound.ini", &pFileNameList);
 	if (!result)
 	{
 		return false;
 	}
 
-	//result = LoadWaveFile(L"../data/sound02_10m.wav", &m_secondaryBuffer[1]);
-	result = LoadWaveFile(L"../data/sound02_10m.wav");
-	if (!result)
-	{
-		return false;
-	}
-	*/
+	TCHAR temp[256] = L"";
 
-	/*
-	// Play the wave file now that it has been loaded.
-	result = PlayWaveFile();
-	if(!result)
+
+	for (int i = 0; i < m_iNumberOfFile; i++)
 	{
-		return false;
+		_tcscpy(temp, pFileNameList + 256 * i);
+		result = LoadWaveFile(temp);
 	}
-	*/
 
 	return true;
 }
 
 
-void SoundClass::Shutdown()
+void SoundClass::CleanUp()
 {
-	// Release the secondary buffer.
-	for (int i = 0; i < 2; i++)
-	{
-		//ShutdownWaveFile(&m_secondaryBuffer[i]);
-	}
+	m_vSoundDevice.clear();		//clear가 각각의 소멸자를 호출한다고 알려져있다.
+	m_SoundWaveList.clear();	// Release the secondary buffer.	세컨더리버퍼는 각각의 웨이브 파일이 갖고있다.
 
-
-	// Shutdown the Direct Sound API.
-	ShutdownDirectSound();
+	// Shutdown the Direct Sound API.	primBuf, DS.
+	ReleaseDirectSound();
+	delete[] pFileNameList;
 
 	return;
 }
@@ -163,6 +141,7 @@ bool SoundClass::InitializeDirectSound(HWND hwnd)
 		return FALSE;
 	}
 
+	m_SoundWaveList.reserve(32);
 
 	return bResult;
 }
@@ -232,24 +211,7 @@ bool SoundClass::CreateBuffer(IDirectSoundBuffer*& pSoundBuffer)
 }
 
 
-void SoundClass::ShutdownDirectSound()
-{
-	// Release the primary sound buffer pointer.
-	if (m_primaryBuffer)
-	{
-		m_primaryBuffer->Release();
-		m_primaryBuffer = 0;
-	}
 
-	// Release the direct sound interface pointer.
-	if (m_DirectSound)
-	{
-		m_DirectSound->Release();
-		m_DirectSound = 0;
-	}
-
-	return;
-}
 
 
 bool SoundClass::LoadWaveFile(const TCHAR* filename, IDirectSoundBuffer8** secondaryBuffer)
@@ -419,26 +381,13 @@ bool SoundClass::LoadWaveFile(const TCHAR* filename, IDirectSoundBuffer8** secon
 }
 
 
-void SoundClass::ShutdownWaveFile(IDirectSoundBuffer8** secondaryBuffer)
-{
-	// Release the secondary sound buffer.
-	if (*secondaryBuffer)
-	{
-		(*secondaryBuffer)->Release();
-		*secondaryBuffer = 0;
-	}
-
-	return;
-}
 
 
-bool SoundClass::PlayWaveFile(eSOUND NUM)
+bool SoundClass::PlayWaveFile(eSOUND NUM, DWORD dwFlag)
 {
 	HRESULT hr;
 
-	// Play the contents of the secondary sound buffer.		//Loop Play until STOP
-	//m_SoundWaveList[NUM]->PlayOnce();
-	m_SoundWaveList[NUM]->PlayLoop();
+	m_SoundWaveList[NUM]->Play(dwFlag);
 
 	return true;
 }
@@ -447,9 +396,7 @@ bool SoundClass::StopWaveFile(eSOUND NUM)
 {
 	HRESULT hr = S_OK;
 
-	//hr = m_secondaryBuffer[NUM]->Stop();
-	//if (FAILED(hr))
-	//	return hr;
+
 
 	return TRUE;
 }
@@ -478,20 +425,17 @@ void SoundClass::VolumeMax(eSOUND target)
 	m_SoundWaveList[target]->SetVolume(DSBVOLUME_MAX);
 }
 
-bool SoundClass::LoadWaveFromINI(const TCHAR* fileName)
+bool SoundClass::LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output)
 {
-	TCHAR path[256] = L"";
-	::GetCurrentDirectory(256, path);
-
 	FILE* fp = _tfopen(fileName, L"rt");
 	if (fp == NULL) return FALSE;
 
-	TCHAR line[256] = L"";
-	TCHAR token[256] = L"";
+	TCHAR line[256] = L"";					//한줄한줄 읽어오자
+	TCHAR token[256] = L"";					//줄 앞 키워드를 읽어오자.
 
 	int iTotalFileNum = 0;					//리소스 갯수.
+	TCHAR* pFileName = NULL;
 
-	TCHAR FILENAME[20][256] = { L"", };
 	DWORD cntFile = 0;
 
 	//유니코드 문자열로 복사시 한글 개짐 방지를 위해 로케일 변경
@@ -513,35 +457,80 @@ bool SoundClass::LoadWaveFromINI(const TCHAR* fileName)
 		if (EQUAL(token, L"*TOTAL_FILE_NUM"))
 		{
 			_stscanf(line, L"\t *TOTAL_FILE_NUM %d", &iTotalFileNum);		//총 불러들일 웨이브 파일 숫자 표시해둠.
-			
+			pFileName = new TCHAR[256 * iTotalFileNum];
 			continue;
 		}
 
 		if (EQUAL(token, L"*FILENAME"))						//내가 찾던 문자열 발견.
 		{
 			_stscanf(line, L"%s", token);					//해당값 읽기
-			//_tcscpy(FILENAME[cntFile], token);				//복사
-			_stscanf(line, _T("\t*FILENAME \"%[^\"]\""), FILENAME[cntFile]);
+			//_tcscpy(FILENAME[cntFile], token);			//복사
+			_stscanf(line, _T("\t*FILENAME \"%[^\"]\""), pFileName + cntFile * 256);
 			cntFile++;
 			
 			continue;
 		}
-
 	}
 
-	return false;
+	//두 숫자가 틀리면 뭔가 잘못됐다는 킹리적갓심.
+	if (cntFile != iTotalFileNum)
+	{
+		MessageBox(NULL, L"리소스 파일 갯수가 맞지않습니다. \n[sound.ini]파일의 TOTAL_FILE_NUM 숫자와 리소스 파일 갯수를 확인하세요.", L"ERROR", MB_OK);
+		return FALSE;
+	}
+
+	if (eSOUND::eSOUND_MAX_ != iTotalFileNum)
+	{
+		MessageBox(NULL, L"LOAD한 리소스 숫자와 Header의 enum수가 맞지않습니다.", L"ERROR", MB_OK);
+		return FALSE;
+	}
+
+	//성공시 리턴.
+	m_iNumberOfFile = iTotalFileNum;
+	*output = pFileName;
+	
+	return TRUE;
 }
 
 bool SoundClass::LoadWaveFile(const TCHAR* szFileName)
 {
-	static int i = 0;
-	//m_SoundWaveList
 	CSoundWave* pTempWave = new CSoundWave(m_DirectSound);
 	bool bResult = pTempWave->LoadWaveFile(szFileName);
-	m_SoundWaveList[i] = (pTempWave);
-	i++;
+	m_SoundWaveList.push_back(pTempWave);							//벡터 클래스에 추가.
 
 	return bResult;
+}
+
+
+void SoundClass::ReleaseWaveFile(IDirectSoundBuffer8** secondaryBuffer)
+{
+	// Release the secondary sound buffer.
+	if (*secondaryBuffer)
+	{
+		(*secondaryBuffer)->Release();
+		*secondaryBuffer = 0;
+	}
+
+	return;
+}
+
+void SoundClass::ReleaseDirectSound()
+{
+	// Release the primary sound buffer pointer.
+	if (m_primaryBuffer)
+	{
+		m_primaryBuffer->Release();
+		m_primaryBuffer = 0;
+	}
+
+	// Release the direct sound interface pointer.
+	if (m_DirectSound)
+	{
+		m_DirectSound->Release();
+		m_DirectSound = 0;
+	}
+
+	return;
 }
 
 
