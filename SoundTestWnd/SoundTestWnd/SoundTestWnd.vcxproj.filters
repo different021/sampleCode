@@ -33,12 +33,18 @@
     <ClInclude Include="Src\sound\soundclass.h">
       <Filter>소스 파일\Sound</Filter>
     </ClInclude>
+    <ClInclude Include="Src\sound\CSoundWave.h">
+      <Filter>소스 파일\Sound</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoundTestWnd.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Src\sound\soundclass.cpp">
+      <Filter>소스 파일\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\sound\CSoundWave.cpp">
       <Filter>소스 파일\Sound</Filter>
     </ClCompile>
   </ItemGroup>

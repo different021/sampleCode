@@ -24,7 +24,7 @@
 #include <vector>
 #include <tuple>
 
-
+#include "CSoundWave.h"
 
 
 /////////////////////////////////////////////////////////////////////
@@ -97,8 +97,15 @@ public:
 
 	bool Initialize(HWND);
 	void Shutdown();
-	bool PlayWaveFile(int NUM);
+	bool PlayWaveFile(eSOUND track);
+	bool StopWaveFile(eSOUND track);
 
+	//Volume Control
+	void VolumeUp(eSOUND target,LONG num);
+	void VolumeDown(eSOUND target ,LONG num);
+	void VolumeMute(eSOUND target);
+	void VolumeMax(eSOUND target);
+	
 
 private:
 	bool InitializeDirectSound(HWND);
@@ -106,16 +113,22 @@ private:
 	bool CreateBuffer(IDirectSoundBuffer*&);
 	void ShutdownDirectSound();
 
+	bool LoadWaveFromINI(const TCHAR* fileName);
+	bool LoadWaveFile(const TCHAR* szFileName);
 	bool LoadWaveFile(const TCHAR*, IDirectSoundBuffer8**);
 	void ShutdownWaveFile(IDirectSoundBuffer8**);
 
-private:
-
+private:	
 	std::vector<DeviceTuple> m_vSoundDevice;
+
+	LONG m_Vol;
 
 	IDirectSound8* m_DirectSound;
 	IDirectSoundBuffer* m_primaryBuffer;
-	IDirectSoundBuffer8* m_secondaryBuffer[eSOUND_MAX_];
+	//IDirectSoundBuffer8* m_secondaryBuffer[eSOUND_MAX_];
+
+	//std::vector<CSoundWave*> m_SoundWaveList;
+	CSoundWave* m_SoundWaveList[eSOUND_MAX_];
 };
 
 

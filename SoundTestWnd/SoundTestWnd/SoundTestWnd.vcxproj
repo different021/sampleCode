@@ -150,11 +150,13 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SoundTestWnd.h" />
+    <ClInclude Include="Src\sound\CSoundWave.h" />
     <ClInclude Include="Src\sound\soundclass.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoundTestWnd.cpp" />
+    <ClCompile Include="Src\sound\CSoundWave.cpp" />
     <ClCompile Include="Src\sound\soundclass.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -175,12 +175,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
         case 'A':
-            g_pSound->PlayWaveFile(0);
+            g_pSound->PlayWaveFile(eBGM_STAGE01_);
             break;
 
         case 'S':
-            g_pSound->PlayWaveFile(1);
+            g_pSound->PlayWaveFile(eBGM_STAGE02_);
             break;
+        case 'Q':
+            //g_pSound->StopWaveFile(0);
+            g_pSound->StopWaveFile(eBGM_STAGE02_);
+            break;
+
+        case 'X':
+            g_pSound->VolumeDown(eBGM_STAGE01_ ,500);
+            break;
+        
+        case 'C':
+            g_pSound->VolumeUp(eBGM_STAGE01_,500);
+            break;
+
 
         default:
             break;
