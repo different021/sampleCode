@@ -26,6 +26,7 @@
 
 #include "CSoundWave.h"
 
+const static TCHAR* FILENAME_INI = L"../sound/sound.ini";
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -35,38 +36,46 @@
 
 enum eSOUND
 {
-	eBGM_STAGE01_ = 0,			//명확한 이름 추천. 첫번째는 0.
+	eBGM_STAGE01_ = 0,			
 	eBGM_STAGE02_,
 	eBGM_STAGE03_,
 
 	eSOUND_MAX_,
 };
 
-
+/*
+//약속된 값이라서 이렇게 하는게 하는게 맞나싶지만? enum이 제일 보기 좋을거 같기는 하다.
+enum PLAYFLAG
+{
+	ePLAY_ONCE_ = 0,
+	ePLAY_LOOP_ = DSBPLAY_LOOPING,
+};
+*/
 
 ///////////////////////////////////////////////////////////////////
 //선언 및 정의
 ///////////////////////////////////////////////////////////////////
 
+//실행 플래그
+//반복
 #define PLAY_LOOP DSBPLAY_LOOPING 
+//한번만
 #define PLAY_ONCE 0
 
 typedef std::tuple<GUID, std::wstring, std::wstring> DeviceTuple;
-class SoundClass;
-
-
 
 
 /////////////////////////////////////////////
 // GLOBAL
 ////////////////////////////////////////////
-
-extern SoundClass* g_pSound;
-
-void InitSound_(HWND);
-void CleanupSound_();
+void InitSound_(HWND);							//초기화			 프로그램 시작시 호출 
+void CleanupSound_();							//데이터 Release  프로그램 종료시 호출
+//control 함수
 bool PlaySound_(eSOUND, DWORD);
-
+bool StopSound_(eSOUND, DWORD);
+bool OnOffSound_();
+void VolumeUp(eSOUND target, DWORD degree);
+void VolumeDown(eSOUND target, DWORD degree);
 
 
 
@@ -76,23 +85,6 @@ bool PlaySound_(eSOUND, DWORD);
 
 class SoundClass
 {
-private:
-	struct WaveHeaderType					//총 44byte
-	{
-		char chunkId[4];					// RIFF : Resource InterChange File Format (Big Endian)
-		unsigned long chunkSize;			// 파일크기 - 8 :: sizeof(chunk_ID) -sizeof(chunk_Size).
-		char format[4];						// 'WAVE' : 웨이브 파일일 경우 
-		char subChunkId[4];					// 'fmt ', fmt' ' 뒤에 공백 한칸. = 4칸. 
-		unsigned long subChunkSize;			//  
-		unsigned short audioFormat;			// PCM = 1 (2byte) little-Endian
-		unsigned short numChannels;			// 체널 수. mono : 1 , Stereo : 2
-		unsigned long sampleRate;			// 1초를 몇개의 조각으로 세분화. 
-		unsigned long  bytesPerSecond;		// SampleRate * numChannels * BitsPerSample / 8; 소리가 1초 몇 바이트 소모?
-		unsigned short blockAlign;			// 전체 채널을 포함하는 한 샘플의 크기
-		unsigned short bitsPerSample;		// 한개의 샘플은 몇개의 비트로 나누는가.
-		char dataChunkId[4];				// 'data'	//문자열들은 BigEndian
-		unsigned long dataSize;				// 실제 PMC 데이터. (BitsPerSample / 8) * NumChannels * 실제 샘플수.
-	};
 
 public:
 	SoundClass();
@@ -104,11 +96,14 @@ public:
 	bool PlayWaveFile(eSOUND track, DWORD dwFlag);
 	bool StopWaveFile(eSOUND track);
 
-	//Volume Control
+	bool CopyToPrim(eSOUND track);
+	bool PlayPrime();
+
+public:												//Volume Control
 	void VolumeUp(eSOUND target,LONG num);
 	void VolumeDown(eSOUND target ,LONG num);
-	void VolumeMute(eSOUND target);
-	void VolumeMax(eSOUND target);
+	void MasterVolumeMute();
+	void MasterVolumeMax();
 	
 
 private:
@@ -118,9 +113,8 @@ private:
 
 	bool LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output);
 	bool LoadWaveFile(const TCHAR* szFileName);
-	bool LoadWaveFile(const TCHAR*, IDirectSoundBuffer8**);
 
-	void ReleaseWaveFile(IDirectSoundBuffer8**);
+	void ReleaseWaveFile(IDirectSoundBuffer8**);	//이제 사용하지 않는다. 주체가 바뀌었다.
 	void ReleaseDirectSound();
 
 private:	
@@ -139,8 +133,10 @@ private:
 
 
 
-#endif
+extern SoundClass* g_pSound;
 
+
+#endif
 
 
 

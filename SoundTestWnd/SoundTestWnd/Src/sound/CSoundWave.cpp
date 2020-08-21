@@ -88,10 +88,8 @@ bool CSoundWave::LoadWaveFile(const TCHAR* fileName)
 
 	// Set the wave format of secondary buffer that this wave file will be loaded onto.
 	waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-	//waveFormat.nSamplesPerSec = 44100;
 	waveFormat.nSamplesPerSec	= waveFileHeader.sampleRate;
-	//waveFormat.wBitsPerSample	= waveFileHeader.sampleRate * waveFileHeader.numChannels * waveFileHeader.bitsPerSample / 8;
-	waveFormat.wBitsPerSample = waveFileHeader.bitsPerSample;
+	waveFormat.wBitsPerSample	= waveFileHeader.bitsPerSample;
 	waveFormat.nChannels		= waveFileHeader.numChannels;
 	waveFormat.nBlockAlign		= (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
 	waveFormat.nAvgBytesPerSec	= waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
@@ -99,7 +97,7 @@ bool CSoundWave::LoadWaveFile(const TCHAR* fileName)
 	
 	// Set the buffer description of the secondary sound buffer that the wave file will be loaded onto.
 	bufferDesc.dwSize			= sizeof(DSBUFFERDESC);
-	bufferDesc.dwFlags			= DSBCAPS_CTRLVOLUME;
+	bufferDesc.dwFlags			= DSBCAPS_CTRLVOLUME | DSBCAPS_GLOBALFOCUS;
 	bufferDesc.dwBufferBytes	= waveFileHeader.dataSize;
 	bufferDesc.dwReserved		= 0;
 	bufferDesc.lpwfxFormat		= &waveFormat;
@@ -165,6 +163,8 @@ bool CSoundWave::LoadWaveFile(const TCHAR* fileName)
 		return false;
 	}
 
+	m_dataSize = waveFileHeader.dataSize;
+
 	return TRUE;
 }
 
@@ -175,7 +175,28 @@ bool CSoundWave::Play(DWORD dwFlag)
 	// Set volume of the buffer to 100%.
 	m_pSecondaryBuffer->SetVolume(m_Vol);
 	m_pSecondaryBuffer->Play(0, 0, dwFlag);
+	
 	return TRUE;
+}
+
+bool CSoundWave::CopyToPrim()
+{
+	HRESULT hr = S_OK;
+	LPDIRECTSOUNDBUFFER dsb;
+	// Lock the prime buffer to write wave data into it.
+	//hr = (m_pPrimaryBuffer)->Lock(0, m_dataSize, (void**)&m_pPrimaryBuffer, (DWORD*)&m_dataSize, NULL, 0, DSBLOCK_ENTIREBUFFER);
+	//if (FAILED(hr))
+	//	return false;
+
+	//CopyMemory(m_pPrimaryBuffer, m_pSecondaryBuffer, m_dataSize);				//°Á½áº½. °Á memcpy¾µ±îÇÑ´Ù.
+
+	//// UnLock the prime buffer
+	//hr = (m_pPrimaryBuffer)->Unlock(m_pPrimaryBuffer, m_dataSize, NULL, 0);
+	//if (FAILED(hr))
+	//	return false;
+
+
+	return true;
 }
 
 void CSoundWave::VolumeUp(LONG num)

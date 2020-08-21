@@ -127,16 +127,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+//-------------------------------------------------------------------------------------------
+//  
+//  이 부분을 참고.
+//  
 //
-//  함수: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  용도: 주 창의 메시지를 처리합니다.
-//
-//  WM_COMMAND  - 애플리케이션 메뉴를 처리합니다.
-//  WM_PAINT    - 주 창을 그립니다.
-//  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
-//
-//
+//  
+//-------------------------------------------------------------------------------------------
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -175,15 +172,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
         case 'A':
-            g_pSound->PlayWaveFile(eBGM_STAGE01_, PLAY_ONCE);
+            PlaySound_(eBGM_STAGE01_, PLAY_ONCE);
+            //g_pSound->PlayWaveFile(eBGM_STAGE01_, PLAY_ONCE);     //이것과 같다 참고하시라.
             break;
 
         case 'S':
-            g_pSound->PlayWaveFile(eBGM_STAGE02_, PLAY_LOOP);
+            PlaySound_(eBGM_STAGE02_, PLAY_LOOP);
+            //g_pSound->PlayWaveFile(eBGM_STAGE02_, PLAY_LOOP);
             break;
 
         case 'D':
-            g_pSound->PlayWaveFile(eBGM_STAGE03_, PLAY_ONCE);
+            PlaySound_(eBGM_STAGE03_, PLAY_ONCE);
             break;
 
         case 'Q':
@@ -191,19 +190,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
             
         case 'X':
-            g_pSound->VolumeDown(eBGM_STAGE01_ ,500);
+            VolumeDown(eBGM_STAGE02_, 500);
             break;
         
         case 'C':
-            g_pSound->VolumeUp(eBGM_STAGE01_,500);
+            VolumeUp(eBGM_STAGE02_, 500);
             break;
 
-
+        case 'Z':
+            OnOffSound_();
+            break;
+        
         default:
             break;
+
         }
 
-        
+        //g_pSound->PlayPrime();
         break;
 
     default:

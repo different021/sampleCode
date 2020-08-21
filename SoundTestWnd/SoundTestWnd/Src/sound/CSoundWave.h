@@ -29,12 +29,15 @@ private:
 
 
 private:
-	IDirectSound8* m_DSDevice;				//device		
-	INT m_CurrentPosition;					//재생위치
-	LONG m_Vol;								//볼륨
+	IDirectSound8* m_DSDevice;					//device		
+	IDirectSoundBuffer* m_pPrimaryBuffer;		//디바이스와 함께 얻어온다. 이 버퍼에 쓸것.
+	IDirectSoundBuffer8* m_pSecondaryBuffer;	//Buffer.
 
-	WaveHeaderType m_WaveHeader;			//Header정보.
-	IDirectSoundBuffer8* m_pSecondaryBuffer; //Buffer.
+	DWORD	m_dataSize;
+	INT		m_CurrentPosition;					//재생위치	->필요없나?
+	LONG	m_Vol;								//볼륨
+
+	WaveHeaderType m_WaveHeader;				//Header정보.
 
 public:
 	CSoundWave();
@@ -45,15 +48,19 @@ public:
 	bool LoadWaveFile(const TCHAR* fileName);
 
 public:
-	//Play
-	bool Play(DWORD dwFlag);
+	
+	bool Play(DWORD dwFlag);		//단순 실행. 사용하지말 것. 테스트용.(wave 파일이 제대로 로딩되었는가)
+	bool CopyToPrim();				//PrimBuffer로 이 웨이브 파일을 쓴다.
 
 public:
 	//
 	void SetDevice(IDirectSound8* pDSDevice) { m_DSDevice = pDSDevice; };
+	void SetPrimBuffer(IDirectSoundBuffer* pPrimBuf) { m_pPrimaryBuffer = pPrimBuf; };
 	void VolumeUp(LONG num);
 	void VolumeDown(LONG num);
 	void SetVolume(LONG num) { m_Vol = num; };
+	DWORD GetDataSize() { return m_dataSize; };
+	IDirectSoundBuffer8* GetBuffer() { return m_pSecondaryBuffer; };
 
 private:
 	void Cleanup();

@@ -43,11 +43,46 @@ void CleanupSound_()
 bool PlaySound_(eSOUND num, DWORD dwFlag)
 {
 	if (num - 1 > eSOUND::eSOUND_MAX_)
+	{
+		MessageBox(NULL, L"Play Sound enum Out of Range", L"ERROR", MB_OK);
 		return FALSE;
+	}
 
 	g_pSound->PlayWaveFile(num, dwFlag);
 
 	return TRUE;
+}
+
+bool StopSound_(eSOUND eTarget, DWORD dwFlag)
+{
+	g_pSound->PlayWaveFile(eTarget, dwFlag);
+	return false;
+}
+
+bool OnOffSound_()
+{
+	static int flag = -1;
+	flag *= -1;
+	if(flag > 0)
+		g_pSound->MasterVolumeMute();
+	if (flag < 0)
+		g_pSound->MasterVolumeMax();
+
+	return TRUE;
+}
+
+void VolumeUp(eSOUND target, DWORD degree)
+{
+	if (target >= eSOUND_MAX_)
+		MessageBox(NULL, L"TARGET SOUND Out of Range", L"ERROR", MB_OK);
+	g_pSound->VolumeUp(target, degree);
+}
+
+void VolumeDown(eSOUND target, DWORD degree)
+{
+	if (target > eSOUND_MAX_)
+		MessageBox(NULL, L"TARGET SOUND Out of Range", L"ERROR", MB_OK);
+	g_pSound->VolumeDown(target, degree);
 }
 
 
@@ -89,8 +124,8 @@ bool SoundClass::Initialize(HWND hwnd)
 	{
 		return false;
 	}
-
-	result = LoadWaveFileNameFromINI(L"../sound/sound.ini", &pFileNameList);
+			
+	result = LoadWaveFileNameFromINI(FILENAME_INI, &pFileNameList);
 	if (!result)
 	{
 		return false;
@@ -174,8 +209,8 @@ bool SoundClass::CreateBuffer(IDirectSoundBuffer*& pSoundBuffer)
 
 	// Setup the primary buffer description.
 	bufferDesc.dwSize = sizeof(DSBUFFERDESC);
-	bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN; //| DSBCAPS_CTRLPOSITIONNOTIFY | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLFREQUENCY | DSBCAPS_CTRLPOSITIONNOTIFY;
-	bufferDesc.dwBufferBytes = 0;
+	bufferDesc.dwFlags = DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN ; 
+	bufferDesc.dwBufferBytes = 0;	//prim버퍼는 0이여야만 한다.														
 	bufferDesc.dwReserved = 0;
 	bufferDesc.lpwfxFormat = NULL;
 	bufferDesc.guid3DAlgorithm = GUID_NULL;
@@ -210,188 +245,16 @@ bool SoundClass::CreateBuffer(IDirectSoundBuffer*& pSoundBuffer)
 	return true;
 }
 
-
-
-
-
-bool SoundClass::LoadWaveFile(const TCHAR* filename, IDirectSoundBuffer8** secondaryBuffer)
-{
-	int error;
-	FILE* pFile;
-	unsigned int count;
-	WaveHeaderType waveFileHeader;
-	WAVEFORMATEX waveFormat;
-	DSBUFFERDESC bufferDesc;
-	HRESULT result;
-	IDirectSoundBuffer* pTempBuffer;
-	unsigned char* waveData;
-	unsigned char* pBuffer;
-	unsigned long bufferSize;
-
-
-	// Open the wave file in binary.
-	error = _wfopen_s(&pFile, filename, L"rb");
-	if (error != 0)
-	{
-		return false;
-	}
-
-	// Read in the wave file header.
-	count = fread(&waveFileHeader, sizeof(waveFileHeader), 1, pFile);
-	if (count != 1)
-	{
-		return false;
-	}
-
-	// Check that the chunk ID is the RIFF format.
-	if ((waveFileHeader.chunkId[0] != 'R') || (waveFileHeader.chunkId[1] != 'I') ||
-		(waveFileHeader.chunkId[2] != 'F') || (waveFileHeader.chunkId[3] != 'F'))
-	{
-		return false;
-	}
-
-	// Check that the file format is the WAVE format.
-	if ((waveFileHeader.format[0] != 'W') || (waveFileHeader.format[1] != 'A') ||
-		(waveFileHeader.format[2] != 'V') || (waveFileHeader.format[3] != 'E'))
-	{
-		return false;
-	}
-
-	// Check that the sub chunk ID is the fmt format.
-	if ((waveFileHeader.subChunkId[0] != 'f') || (waveFileHeader.subChunkId[1] != 'm') ||
-		(waveFileHeader.subChunkId[2] != 't') || (waveFileHeader.subChunkId[3] != ' '))
-	{
-		return false;
-	}
-
-	// Check that the audio format is WAVE_FORMAT_PCM.
-	if (waveFileHeader.audioFormat != WAVE_FORMAT_PCM)
-	{
-		return false;
-	}
-
-	// Check that the wave file was recorded in stereo format.
-	if (waveFileHeader.numChannels != 2)
-	{
-		return false;
-	}
-
-	// Check that the wave file was recorded at a sample rate of 44.1 KHz.
-	if (waveFileHeader.sampleRate != 44100)
-	{
-		//return false;
-	}
-
-	// Ensure that the wave file was recorded in 16 bit format.
-	if (waveFileHeader.bitsPerSample != 16)
-	{
-		return false;
-	}
-
-	// Check for the data chunk header.
-	if ((waveFileHeader.dataChunkId[0] != 'd') || (waveFileHeader.dataChunkId[1] != 'a') ||
-		(waveFileHeader.dataChunkId[2] != 't') || (waveFileHeader.dataChunkId[3] != 'a'))
-	{
-		return false;
-	}
-
-	// Set the wave format of secondary buffer that this wave file will be loaded onto.
-	waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-	//waveFormat.nSamplesPerSec = 44100;
-	waveFormat.nSamplesPerSec = waveFileHeader.sampleRate;
-	waveFormat.wBitsPerSample = 16;
-	waveFormat.nChannels = 2;
-	waveFormat.nBlockAlign = (waveFormat.wBitsPerSample / 8) * waveFormat.nChannels;
-	waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
-	waveFormat.cbSize = 0;
-
-	// Set the buffer description of the secondary sound buffer that the wave file will be loaded onto.
-	bufferDesc.dwSize = sizeof(DSBUFFERDESC);
-	bufferDesc.dwFlags = DSBCAPS_CTRLVOLUME;
-	bufferDesc.dwBufferBytes = waveFileHeader.dataSize;
-	bufferDesc.dwReserved = 0;
-	bufferDesc.lpwfxFormat = &waveFormat;
-	bufferDesc.guid3DAlgorithm = GUID_NULL;
-
-	// Create a temporary sound buffer with the specific buffer settings.
-	result = m_DirectSound->CreateSoundBuffer(&bufferDesc, &pTempBuffer, NULL);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	// Test the buffer format against the direct sound 8 interface and create the secondary buffer.
-	result = pTempBuffer->QueryInterface(IID_IDirectSoundBuffer8, (void**)secondaryBuffer);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	// Release the temporary buffer.
-	pTempBuffer->Release();
-	pTempBuffer = 0;
-
-	// Move to the beginning of the wave data which starts at the end of the data chunk header.
-	fseek(pFile, sizeof(WaveHeaderType), SEEK_SET);
-
-	// Create a temporary buffer to hold the wave file data.
-	waveData = new unsigned char[waveFileHeader.dataSize];
-	if (!waveData)
-	{
-		return false;
-	}
-
-	// Read in the wave file data into the newly created buffer.
-	count = fread(waveData, 1, waveFileHeader.dataSize, pFile);
-	if (count != waveFileHeader.dataSize)
-	{
-		return false;
-	}
-
-	// Close the file once done reading.
-	error = fclose(pFile);
-	if (error != 0)
-	{
-		return false;
-	}
-
-	// Lock the secondary buffer to write wave data into it.
-	result = (*secondaryBuffer)->Lock(0, waveFileHeader.dataSize, (void**)&pBuffer, (DWORD*)&bufferSize, NULL, 0, DSBLOCK_ENTIREBUFFER);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	// Copy the wave data into the buffer.
-	//memcpy(pBuffer, waveData, waveFileHeader.dataSize);
-	memcpy_s(pBuffer, waveFileHeader.dataSize, waveData, waveFileHeader.dataSize);
-
-	// Unlock the secondary buffer after the data has been written to it.
-	result = (*secondaryBuffer)->Unlock((void*)pBuffer, bufferSize, NULL, 0);
-	if (FAILED(result))
-	{
-		return false;
-	}
-
-	// Release the wave data since it was copied into the secondary buffer.
-	delete[] waveData;
-	waveData = 0;
-
-	return true;
-}
-
-
-
-
 bool SoundClass::PlayWaveFile(eSOUND NUM, DWORD dwFlag)
 {
 	HRESULT hr;
-
 	m_SoundWaveList[NUM]->Play(dwFlag);
+	//m_primaryBuffer->Play(0, 0, 0);
 
 	return true;
 }
 
+//NOT IMPLEMENT this part
 bool SoundClass::StopWaveFile(eSOUND NUM)
 {
 	HRESULT hr = S_OK;
@@ -401,28 +264,68 @@ bool SoundClass::StopWaveFile(eSOUND NUM)
 	return TRUE;
 }
 
+bool SoundClass::CopyToPrim(eSOUND track)
+{
+	//bool bResult = m_SoundWaveList[track]->CopyToPrim();
+	//if (!bResult)
+	//{
+	//	MessageBox(NULL, L"Fail To Play PrimaryBuffer", L"ERORR : SOUND", MB_OK);
+	//	return FALSE;
+	//}
+
+	DWORD dataSize =m_SoundWaveList[track]->GetDataSize();
+	LPDIRECTSOUNDBUFFER buf = m_SoundWaveList[track]->GetBuffer();
+
+	//Lock the prime buffer to write wave data into it.
+	HRESULT	hr = (m_primaryBuffer)->Lock(0, dataSize, (void**)&buf, (DWORD*)&dataSize, NULL, 0, DSBLOCK_ENTIREBUFFER);
+	
+	if (FAILED(hr))
+		return false;
+
+	CopyMemory(m_primaryBuffer, buf, dataSize);				//걍써봄. 걍 memcpy쓸까한다.
+
+	// UnLock the prime buffer
+	hr = (m_primaryBuffer)->Unlock(m_primaryBuffer, dataSize, NULL, 0);
+	if (FAILED(hr))
+		return false;
+
+
+
+	return TRUE;
+}
+
+bool SoundClass::PlayPrime()
+{
+	HRESULT hr = m_primaryBuffer->Play(0, 0, 0);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, L"FAIL to Play Prim Buffer", L"ERROR!", MB_OK);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 //target에 num만큼 볼륨 증가.
 void SoundClass::VolumeUp(eSOUND target, LONG num)
 {
 	m_SoundWaveList[target]->VolumeUp(num);
-	//m_secondaryBuffer[eSOUND::eBGM_STAGE01_]->SetVolume(m_Vol);
 }
 
 //target에 num만큼 볼륨 감소.
 void SoundClass::VolumeDown(eSOUND target, LONG num)
 {
 	m_SoundWaveList[target]->VolumeDown(num);
-	//m_secondaryBuffer[eSOUND::eBGM_STAGE01_]->SetVolume(m_Vol);
 }
 
-void SoundClass::VolumeMute(eSOUND target)
+void SoundClass::MasterVolumeMute()
 {
-	m_SoundWaveList[target]->SetVolume(DSBVOLUME_MIN);
+	m_primaryBuffer->SetVolume(DSBVOLUME_MIN);
 }
 
-void SoundClass::VolumeMax(eSOUND target)
+void SoundClass::MasterVolumeMax()
 {
-	m_SoundWaveList[target]->SetVolume(DSBVOLUME_MAX);
+	m_primaryBuffer->SetVolume(DSBVOLUME_MAX);
 }
 
 bool SoundClass::LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output)
@@ -467,7 +370,7 @@ bool SoundClass::LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output)
 			//_tcscpy(FILENAME[cntFile], token);			//복사
 			_stscanf(line, _T("\t*FILENAME \"%[^\"]\""), pFileName + cntFile * 256);
 			cntFile++;
-			
+
 			continue;
 		}
 	}
@@ -488,13 +391,14 @@ bool SoundClass::LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output)
 	//성공시 리턴.
 	m_iNumberOfFile = iTotalFileNum;
 	*output = pFileName;
-	
+
 	return TRUE;
 }
 
 bool SoundClass::LoadWaveFile(const TCHAR* szFileName)
 {
 	CSoundWave* pTempWave = new CSoundWave(m_DirectSound);
+	pTempWave->SetPrimBuffer(m_primaryBuffer);
 	bool bResult = pTempWave->LoadWaveFile(szFileName);
 	m_SoundWaveList.push_back(pTempWave);							//벡터 클래스에 추가.
 
