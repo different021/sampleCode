@@ -4,9 +4,9 @@
 #include "framework.h"
 #include "SoundTestWnd.h"
 
-#include "Src\sound\soundclass.h"
+//#include "Src\sound\soundclass.h"
 
-
+#include "Src\sound3D\SoundClass3D.h"
 
 
 #define MAX_LOADSTRING 100
@@ -46,7 +46,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
 
     //사운드 초기화
-    InitSound_(g_hWnd);
+    InitSound3D(g_hWnd);
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SOUNDTESTWND));
 
@@ -63,7 +63,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     }
     
     //사운드 제거
-    CleanupSound_();
+    CleanUp3D();
    
 
     return (int) msg.wParam;
@@ -136,6 +136,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //-------------------------------------------------------------------------------------------
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    static float x = 0;
+    static float y = 0;
+    static float z = 0;
+
     switch (message)
     {
     case WM_COMMAND:
@@ -172,34 +176,42 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
         case 'A':
-            PlaySound_(eBGM_STAGE01_, PLAY_ONCE);
+
+            //PlaySound3D(eSOUND_STAGE01_, PLAY_ONCE);
+            PlaySound3D(eSOUND_SFX_MOVE, PLAY_ONCE);
+            
             //g_pSound->PlayWaveFile(eBGM_STAGE01_, PLAY_ONCE);     //이것과 같다 참고하시라.
             break;
 
         case 'S':
-            PlaySound_(eBGM_STAGE02_, PLAY_LOOP);
+            PlaySound3D(eSOUND_STAGE01_, PLAY_LOOP);
+            //PlaySound3D(eSOUND_STAGE02_, PLAY_LOOP);
             //g_pSound->PlayWaveFile(eBGM_STAGE02_, PLAY_LOOP);
             break;
 
         case 'D':
-            PlaySound_(eBGM_STAGE03_, PLAY_ONCE);
+            //PlaySound3D(eSOUND_DRUM_, PLAY_ONCE);
             break;
 
         case 'Q':
-            g_pSound->StopWaveFile(eBGM_STAGE02_);
+           // g_pSound->StopWaveFile(eSOUND_STAGE02_);
             break;
             
         case 'X':
-            VolumeDown(eBGM_STAGE02_, 500);
+          //  VolumeDown(eSOUND_STAGE02_, 500);
             break;
         
         case 'C':
-            VolumeUp(eBGM_STAGE02_, 500);
+          //  VolumeUp(eSOUND_STAGE02_, 500);
             break;
 
         case 'Z':
-            OnOffSound_();
+          //  OnOffSound_();
             break;
+        case VK_LEFT:
+            //y += 100;
+            //SetPos(x, y, z);
+                break;
         
         default:
             break;

@@ -169,7 +169,7 @@ bool SoundClass::InitializeDirectSound(HWND hwnd)
 	}
 
 
-	bResult = CreateBuffer(m_primaryBuffer);
+	bResult = CreatePrimaryBuffer(m_primaryBuffer);
 	if (!bResult)
 	{
 		MessageBox(NULL, L"FAIL TO CREATE BUFFER01", L"ERROR", MB_OK);
@@ -202,7 +202,7 @@ bool SoundClass::CreateDevice(HWND hWnd)
 	return TRUE;
 }
 
-bool SoundClass::CreateBuffer(IDirectSoundBuffer*& pSoundBuffer)
+bool SoundClass::CreatePrimaryBuffer(IDirectSoundBuffer*& pSoundBuffer)
 {
 	HRESULT hr = S_OK;
 	DSBUFFERDESC bufferDesc;
@@ -375,7 +375,7 @@ bool SoundClass::LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output)
 		}
 	}
 
-	//두 숫자가 틀리면 뭔가 잘못됐다는 킹리적갓심.
+	//두 숫자가 틀리면 뭔가 잘못됐다
 	if (cntFile != iTotalFileNum)
 	{
 		MessageBox(NULL, L"리소스 파일 갯수가 맞지않습니다. \n[sound.ini]파일의 TOTAL_FILE_NUM 숫자와 리소스 파일 갯수를 확인하세요.", L"ERROR", MB_OK);

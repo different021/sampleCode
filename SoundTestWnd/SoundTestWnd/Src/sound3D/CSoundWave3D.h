@@ -5,9 +5,8 @@
 #include <Windows.h>
 #include <dsound.h>
 
-//기
 
-class CSoundWave
+class CSoundWave3D
 {
 private:
 	struct WaveHeaderType					//총 44byte
@@ -29,35 +28,36 @@ private:
 
 
 private:
-	IDirectSound8*		 m_DSDevice;			//device		
-	IDirectSoundBuffer*  m_pPrimaryBuffer;		//디바이스와 함께 얻어온다. 이 버퍼에 쓸것.
-	IDirectSoundBuffer8* m_pSecondaryBuffer;	//Buffer.
+	IDirectSound8* m_pDS;							//device 외부 참조.		
+	IDirectSoundBuffer8*	m_pSecondaryBuffer;		//Buffer.
+	IDirectSoundBuffer8*	m_pSecondaryBuffer2[8];
+	IDirectSound3DBuffer8*	m_pSecondary3DBuffer;	//3D
 
 	DWORD	m_dataSize;
 	INT		m_CurrentPosition;					//재생위치	->필요없나?
 	LONG	m_Vol;								//볼륨
 
 	WaveHeaderType m_WaveHeader;				//Header정보.
+	DSBUFFERDESC   m_DESC;
 
 public:
-	CSoundWave();
-	CSoundWave(IDirectSound8* pDSDevice);
-	~CSoundWave();
-	
-	
+	CSoundWave3D();
+	CSoundWave3D(IDirectSound8* pDS);
+	~CSoundWave3D();
+
 	bool LoadWaveFile(const TCHAR* fileName);
 
 public:
-	bool MakeDuple();
+	bool SetStartMusicPos(DWORD dwNewPos);
+	bool SetVolume(LONG);
+	void SetPos(float x, float y, float z);
 	bool Play(DWORD dwFlag);		//단순 실행. 사용하지말 것. 테스트용.(wave 파일이 제대로 로딩되었는가)
+	bool Play(DWORD num, DWORD dwFlag);
+	void Mute();
 
 public:
-	//
-	void SetDevice(IDirectSound8* pDSDevice) { m_DSDevice = pDSDevice; };
-	void SetPrimBuffer(IDirectSoundBuffer* pPrimBuf) { m_pPrimaryBuffer = pPrimBuf; };
-	void VolumeUp(LONG num);
-	void VolumeDown(LONG num);
-	void SetVolume(LONG num) { m_Vol = num; };
+	void SetDevice(IDirectSound8* pDS) { m_pDS = pDS; };
+
 	DWORD GetDataSize() { return m_dataSize; };
 	IDirectSoundBuffer8* GetBuffer() { return m_pSecondaryBuffer; };
 

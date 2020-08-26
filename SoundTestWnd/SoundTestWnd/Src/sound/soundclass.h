@@ -36,42 +36,34 @@ const static TCHAR* FILENAME_INI = L"../sound/sound.ini";
 
 enum eSOUND
 {
-	eBGM_STAGE01_ = 0,			
-	eBGM_STAGE02_,
-	eBGM_STAGE03_,
+	eSOUND_STAGE01_ = 0,			
+	eSOUND_STAGE02_,
+	eSOUND_DRUM_,
 
 	eSOUND_MAX_,
 };
 
-/*
-//약속된 값이라서 이렇게 하는게 하는게 맞나싶지만? enum이 제일 보기 좋을거 같기는 하다.
-enum PLAYFLAG
-{
-	ePLAY_ONCE_ = 0,
-	ePLAY_LOOP_ = DSBPLAY_LOOPING,
-};
-*/
 
 ///////////////////////////////////////////////////////////////////
 //선언 및 정의
 ///////////////////////////////////////////////////////////////////
 
 //실행 플래그
-//반복
-#define PLAY_LOOP DSBPLAY_LOOPING 
-//한번만
-#define PLAY_ONCE 0
+
+#define PLAY_LOOP	DSBPLAY_LOOPING //반복
+#define PLAY_ONCE	0				  //한번만
+
+
 
 typedef std::tuple<GUID, std::wstring, std::wstring> DeviceTuple;
-
 
 /////////////////////////////////////////////
 // GLOBAL
 ////////////////////////////////////////////
 void InitSound_(HWND);							//초기화			 프로그램 시작시 호출 
 void CleanupSound_();							//데이터 Release  프로그램 종료시 호출
-//control 함수
-bool PlaySound_(eSOUND, DWORD);
+
+bool PlaySound_(eSOUND, DWORD);					//CONTROL 함수
 bool StopSound_(eSOUND, DWORD);
 bool OnOffSound_();
 void VolumeUp(eSOUND target, DWORD degree);
@@ -109,7 +101,7 @@ public:												//Volume Control
 private:
 	bool InitializeDirectSound(HWND);
 	bool CreateDevice(HWND);
-	bool CreateBuffer(IDirectSoundBuffer*&);
+	bool CreatePrimaryBuffer(IDirectSoundBuffer*&);
 
 	bool LoadWaveFileNameFromINI(const TCHAR* fileName, TCHAR** output);
 	bool LoadWaveFile(const TCHAR* szFileName);

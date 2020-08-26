@@ -150,14 +150,28 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SoundTestWnd.h" />
-    <ClInclude Include="Src\sound\CSoundWave.h" />
-    <ClInclude Include="Src\sound\soundclass.h" />
+    <ClInclude Include="Src\sound3D\CSoundWave3D.h" />
+    <ClInclude Include="Src\sound3D\SoundClass3D.h" />
+    <ClInclude Include="Src\sound\CSoundWave.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Src\sound\soundclass.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Src\StringPool\StringPool.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoundTestWnd.cpp" />
-    <ClCompile Include="Src\sound\CSoundWave.cpp" />
-    <ClCompile Include="Src\sound\soundclass.cpp" />
+    <ClCompile Include="Src\sound3D\CSoundWave3D.cpp" />
+    <ClCompile Include="Src\sound3D\SoundClass3D.cpp" />
+    <ClCompile Include="Src\sound\CSoundWave.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Src\sound\soundclass.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Src\StringPool\StringPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SoundTestWnd.rc" />
@@ -165,6 +179,9 @@
   <ItemGroup>
     <Image Include="small.ico" />
     <Image Include="SoundTestWnd.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\sound\sound.ini" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

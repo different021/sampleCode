@@ -16,6 +16,12 @@
     <Filter Include="소스 파일\Sound">
       <UniqueIdentifier>{7f1dbe81-81c1-4556-8c55-47fa5f781ec4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Sound3D">
+      <UniqueIdentifier>{e18cddfc-e58a-4161-99a4-b33c8b60d2d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\StringPool">
+      <UniqueIdentifier>{7d000641-8a67-4663-8202-8ff5a8ccfb32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -36,6 +42,15 @@
     <ClInclude Include="Src\sound\CSoundWave.h">
       <Filter>소스 파일\Sound</Filter>
     </ClInclude>
+    <ClInclude Include="Src\sound3D\SoundClass3D.h">
+      <Filter>소스 파일\Sound3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\sound3D\CSoundWave3D.h">
+      <Filter>소스 파일\Sound3D</Filter>
+    </ClInclude>
+    <ClInclude Include="Src\StringPool\StringPool.h">
+      <Filter>소스 파일\StringPool</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SoundTestWnd.cpp">
@@ -46,6 +61,15 @@
     </ClCompile>
     <ClCompile Include="Src\sound\CSoundWave.cpp">
       <Filter>소스 파일\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\sound3D\SoundClass3D.cpp">
+      <Filter>소스 파일\Sound3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\sound3D\CSoundWave3D.cpp">
+      <Filter>소스 파일\Sound3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\StringPool\StringPool.cpp">
+      <Filter>소스 파일\StringPool</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -60,5 +84,10 @@
     <Image Include="SoundTestWnd.ico">
       <Filter>리소스 파일</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\sound\sound.ini">
+      <Filter>헤더 파일</Filter>
+    </None>
   </ItemGroup>
 </Project>
