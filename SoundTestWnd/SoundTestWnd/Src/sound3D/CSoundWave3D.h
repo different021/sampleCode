@@ -19,9 +19,9 @@ private:
 		unsigned short audioFormat;			// PCM = 1 (2byte) little-Endian
 		unsigned short numChannels;			// 체널 수. mono : 1 , Stereo : 2
 		unsigned long sampleRate;			// 1초를 몇개의 조각으로 세분화. 
-		unsigned long  bytesPerSecond;		// SampleRate * numChannels * BitsPerSample / 8; 소리가 1초 몇 바이트 소모?
-		unsigned short blockAlign;			// 전체 채널을 포함하는 한 샘플의 크기
-		unsigned short bitsPerSample;		// 한개의 샘플은 몇개의 비트로 나누는가.
+		unsigned long  bytesPerSecond;		// SampleRate * numChannels * BitsPerSample / 8; 1초의 소리가 차지하는 바이트 수.
+		unsigned short blockAlign;			// 전체 채널을 포함하는 한 샘플의 크기. 2체널 샘플당 16bit면  2 * 16 / 8 (byte로변환)
+		unsigned short bitsPerSample;		// 샘플당 비트수.
 		char dataChunkId[4];				// 'data'	//문자열들은 BigEndian
 		unsigned long dataSize;				// 실제 PMC 데이터. (BitsPerSample / 8) * NumChannels * 실제 샘플수.
 	};
@@ -66,3 +66,12 @@ private:
 
 };
 
+/*
+
+ WAVE Format의 단점
+1. 최대 4GB
+2. 파일에 정보에를 담을 수 없다.
+ ex) IU 좋은날.
+	그딴 정보 담을 수 없음. 그냥 틀어봐.
+
+*/
