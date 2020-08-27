@@ -156,9 +156,6 @@
   <ItemGroup>
     <ClCompile Include="Sound2.cpp" />
     <ClCompile Include="Src\CSound.cpp" />
-    <ClCompile Include="test.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Sound2.rc" />
