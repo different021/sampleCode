@@ -3,7 +3,7 @@
 
 #include "framework.h"
 #include "Sound2.h"
-
+#include "Src\CSound.h"
 
 #define MAX_LOADSTRING 100
 
@@ -19,6 +19,10 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 HWND g_hWnd = NULL;
+
+CSound* g_pSound = NULL;
+
+#define UM_PLAY_DONE	WM_USER + 1
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -45,9 +49,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg;
 
-    std::vector<DeviceTuple> vSoundDevice;
-    DirectSoundEnumerate((LPDSENUMCALLBACK)DSEnumCallback, (LPVOID)&vSoundDevice);
-
+    g_pSound = new CSound();
+    g_pSound->CreateDSound(g_hWnd);
 
     // 기본 메시지 루프입니다:
     while (GetMessage(&msg, nullptr, 0, 0))
@@ -58,6 +61,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
     }
+
+    delete g_pSound;
 
     return (int) msg.wParam;
 }
@@ -107,8 +112,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
    
-   g_hWnd = hWnd;
-
    if (!hWnd)
    {
       return FALSE;
@@ -116,6 +119,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
+
+   g_hWnd = hWnd;
 
    return TRUE;
 }
@@ -159,6 +164,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             EndPaint(hWnd, &ps);
         }
         break;
+    case WM_KEYUP:
+        switch (wParam)
+        {
+        case 'A':
+            
+            TCHAR str[] = L"alarm.wav";
+            g_pSound->PlayTheSound(g_hWnd, UM_PLAY_DONE, str);
+           // m_Player.PlayTheSound(GetSafeHwnd(), UM_PLAY_DONE, _T("alarm.wav"));
+            break;
+        }
+
+        break;
+
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

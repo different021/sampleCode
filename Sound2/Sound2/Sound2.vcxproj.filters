@@ -41,6 +41,9 @@
     <ClCompile Include="Src\CSound.cpp">
       <Filter>Sound</Filter>
     </ClCompile>
+    <ClCompile Include="test.cpp">
+      <Filter>Sound</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Sound2.rc">

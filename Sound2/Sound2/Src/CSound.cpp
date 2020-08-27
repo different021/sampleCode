@@ -1,262 +1,303 @@
 #include "CSound.h"
 
-CSound* g_pSound = NULL;
+//CSound* g_pSound = NULL;
 
-//mono stero만 가능.
-int ReadWaveFile(LPTSTR szFileName)
+
+
+CSound::CSound() : m_pDirectSound(nullptr), m_pDSoundBuffer(nullptr), m_hCallbackThread(nullptr), m_hCallbackEvent(nullptr), m_bThreadEnd(FALSE),
+m_nLength(0), m_RawData(), m_hCallbackWnd(nullptr), m_nMsgID(0)
+{
+	memset(&m_wfx, 0x00, sizeof(m_wfx));
+}
+
+CSound::~CSound()
+{
+	if (nullptr != m_pDSoundBuffer)
+	{
+		m_pDSoundBuffer->Stop();
+	}
+	if (nullptr != m_pDirectSound)
+	{
+		m_bThreadEnd = TRUE;
+		SetEvent(m_hCallbackEvent);
+		WaitForSingleObject(m_hCallbackThread, 5000);
+		CloseHandle(m_hCallbackEvent);
+		CloseHandle(m_hCallbackThread);
+	}
+
+	//TRACE(_T("[PGLOG] DSound Destructor Called. \n"));
+}
+
+int CSound::CreateDSound(HWND hWnd, LPCGUID deviceID)
+{
+	if (nullptr != m_pDirectSound)
+	{
+		MessageBox(NULL, L" [ERROR] Create DS ", L"ERROR", MB_OK);
+		return -1;
+	}
+
+	if (nullptr == hWnd)
+	{
+		MessageBox(NULL, L" [ERROR] hWnd = NULL ", L"ERROR", MB_OK);
+		return -2;
+	}
+
+	HRESULT hr = DirectSoundCreate8(deviceID, &m_pDirectSound, nullptr);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, L" [ERROR] FAIL to Create ", L"ERROR", MB_OK);
+		return -3;
+	}
+
+	m_pDirectSound->SetCooperativeLevel(hWnd, DSSCL_PRIORITY);
+
+	m_hCallbackEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	m_hCallbackThread = (HANDLE)_beginthreadex(nullptr, 0, CSound::SoundCallback, this, 0, 0);
+	return 0;
+}
+
+int CSound::ReadWaveFile(LPTSTR szFileName)
 {
 	if (nullptr == szFileName)
+	{
 		return -1;
+	}
 
-	//WAVE File Open
-	HMMIO hmmio = nullptr;
-	hmmio = mmioOpen(szFileName, nullptr, MMIO_READ | MMIO_ALLOCBUF);
+	HMMIO hmmio = mmioOpen(szFileName, nullptr, MMIO_ALLOCBUF | MMIO_READ);
 	if (nullptr == hmmio)
+	{
 		return -2;
+	}
 
-	//Find RIFF Chunk
 	MMCKINFO mmckParent;
-	memset(&mmckParent, 0x00, sizeof(mmckParent));
 	mmckParent.fccType = mmioFOURCC('W', 'A', 'V', 'E');
-
-	HRESULT mmRes = mmioDescend(hmmio, &mmckParent, nullptr, MMIO_FINDRIFF);
-	if (MMSYSERR_NOERROR != mmRes)
+	
+	MMRESULT mmResult =	mmioDescend(hmmio, &mmckParent, nullptr, MMIO_FINDRIFF);
+	if (MMSYSERR_NOERROR != mmResult)
 	{
 		mmioClose(hmmio, 0);
 		return -3;
 	}
 
-	//Find Format Chunk
 	MMCKINFO mmckChild;
-	memset(&mmckChild, 0x00, sizeof(mmckChild));
-	mmckChild.fccType = mmioFOURCC('f', 'm', 't', ' ');
+	mmckChild.ckid = mmioFOURCC('f', 'm', 't', ' ');
 
-	mmRes = mmioDescend(hmmio, &mmckChild, &mmckParent, MMIO_FINDCHUNK);
-	if (MMSYSERR_NOERROR != mmRes)
+	mmResult = mmioDescend(hmmio, &mmckChild, &mmckParent, MMIO_FINDCHUNK);
+	if (MMSYSERR_NOERROR != mmResult)
+	{
+		mmioClose(hmmio, 0);
+		return -3;
+
+	}
+
+	LONG nFormatLen = mmckChild.cksize;
+	if (mmioRead(hmmio, (HPSTR)&m_wfx, nFormatLen) != nFormatLen)
 	{
 		mmioClose(hmmio, 0);
 		return -4;
 	}
 
-	WAVEFORMATEX wfex;
-	memset(&wfex, 0x00, sizeof(wfex));
-	mmioRead(hmmio, (HPSTR)&wfex, mmckChild.cksize);
-
-	OutputDebugWAVEFORMATEX(wfex);
-
-	//std::cout << "wFormatTag      : " << wfex.wFormatTag << std::endl;
-	//std::cout << "nChannels       : " << wfex.nChannels << std::endl;
-	//std::cout << "nSamplesPerSec  : " << wfex.nSamplesPerSec << std::endl;
-	//std::cout << "wBitsPerSample  : " << wfex.wBitsPerSample << std::endl;
-	//std::cout << "nBlockAlign     : " << wfex.nBlockAlign << std::endl;
-	//std::cout << "nAvgBytesPerSec : " << wfex.nAvgBytesPerSec << std::endl;
-
-	//Find Data Chunk
-	mmioAscend(hmmio, &mmckChild, 0);
-
-	mmckChild.ckid = mmioFOURCC('d', 'a', 't', 'a');
-
-	mmRes = mmioDescend(hmmio, &mmckChild, &mmckParent, MMIO_FINDCHUNK);
-	if (MMSYSERR_NOERROR != mmRes)
+	mmResult = mmioAscend(hmmio, &mmckChild, 0);
+	if (MMSYSERR_NOERROR != mmResult)
 	{
 		mmioClose(hmmio, 0);
 		return -5;
 	}
 
-	DWORD dwDataSize = mmckChild.cksize;
-	std::cout << "Data Size       : " << dwDataSize << std::endl;
+	mmckChild.ckid = mmioFOURCC('d', 'a', 't', 'a');
 
-	//Read Wave Data
-	char* pData = nullptr;
-	try
+	mmResult = mmioDescend(hmmio, &mmckChild, &mmckParent, MMIO_FINDCHUNK);
+	if (MMSYSERR_NOERROR != mmResult)
 	{
-		pData = new char[dwDataSize];
+		mmioClose(hmmio, 0);
+		return -3;
 	}
-	catch (std::bad_alloc e)
+
+	m_nLength = mmckChild.cksize;
+
+	char* pTemp = nullptr;
+	pTemp = new char[m_nLength];
+
+	//try
+	//{
+	//	pTemp = new char[m_nLength];
+	//}
+	//catch (CMemoryException* /*e*/)
+	//{
+	//}
+	//catch (CException* /*e*/)
+	//{
+	//}
+
+	if (nullptr == pTemp)
 	{
 		mmioClose(hmmio, 0);
 		return -6;
 	}
 
-	int err = mmioRead(hmmio, (HPSTR)pData, dwDataSize);
-	if (err == -1)
+	if (m_nLength != mmioRead(hmmio, (HPSTR)pTemp, m_nLength))
 	{
+		delete[] pTemp;
 		mmioClose(hmmio, 0);
-		delete[] pData;
-		return -7;
+		return -4;
 	}
 
-	delete[] pData;
-
-	mmioClose(hmmio, 0);
+	m_RawData.reset(pTemp, ArrayDeleter());
 
 	return 0;
-
 }
 
-
-
-
-
-BOOL CALLBACK DSEnumCallback(LPGUID lpGuid, LPCTSTR lpcstrDescription, LPCTSTR lpcstrModule, LPVOID lpContext)
+int CSound::PlayTheSound(HWND hWnd, UINT nMsgID, LPTSTR szWaveFile)
 {
-	auto vSoundDevice = reinterpret_cast<std::vector<DeviceTuple>*>(lpContext);
-
-#ifdef DEBUG
-	TCHAR str[256] = L"";
-	wsprintf(str, lpcstrDescription);
-	OutputDebugString(str);
-	OutputDebugString(L"\n");
-#endif // DEBUG
-
-	GUID guid;
-	memset(&guid, 0x00, sizeof(guid));
-	if (nullptr != lpGuid)
+	
+	if (nullptr == m_pDirectSound)
 	{
-		memcpy(&guid, lpGuid, sizeof(guid));
+		MessageBox(NULL, L"PLAY ERROR", L"ERROR", MB_OK);
+		return -1;
 	}
-	vSoundDevice->push_back(std::make_tuple(guid, std::wstring(lpcstrDescription), std::wstring(lpcstrModule)));
 
-	return TRUE;
+	if (0 != ReadWaveFile(szWaveFile))
+	{
+		MessageBox(NULL, L"[ERROR : PLAY]\n ReadWaveFile", L"ERROR", MB_OK);
+		return -2;
+	}
+
+	HRESULT hr = CreateSoundBuffer();
+	if (FAILED(hr))
+	{
+		//TRACE(_T("[PGLOG] PlayTheSound CreateSoundBuffer Error. \n"));
+		return -3;
+	}
+
+	hr = SetNotification();
+	if (FAILED(hr))
+	{
+		//TRACE(_T("[PGLOG] PlayTheSound SetNotification Error. \n"));
+		return -4;
+	}
+
+	m_hCallbackWnd = hWnd;
+	m_nMsgID = nMsgID;
+
+	m_pDSoundBuffer->SetCurrentPosition(0);
+	m_pDSoundBuffer->Play(0, 0, 0);
+
+	return 0;
 }
 
-HRESULT CreateSoundBuffer(LPDIRECTSOUND8 lpDS, LPDIRECTSOUNDBUFFER8* ppDsb8)
+void CSound::StopTheSound()
 {
-	WAVEFORMATEX wfx;
-	memset(&wfx, 0, sizeof(WAVEFORMATEX));
-	wfx.wFormatTag		= WAVE_FORMAT_PCM;
-	wfx.nChannels		= 1;
-	wfx.wBitsPerSample	= 16;
-	wfx.cbSize			= 0;
-	wfx.nSamplesPerSec	= 16000;
-	wfx.nAvgBytesPerSec = wfx.nSamplesPerSec * (wfx.wBitsPerSample / 8);
-	wfx.nBlockAlign		= (wfx.wBitsPerSample / 8) * wfx.nChannels;
-
-	DSBUFFERDESC dc;
-	memset(&dc, 0, sizeof(dc));
-	dc.dwSize		 = sizeof(DSBUFFERDESC);
-	dc.dwFlags		 = DSBCAPS_STATIC | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
-	dc.dwBufferBytes = 3 * wfx.nAvgBytesPerSec;
-	dc.lpwfxFormat	 = &wfx;
-
-	HRESULT hr = S_OK;
-	LPDIRECTSOUNDBUFFER pDsb = NULL;
-	hr = lpDS->CreateSoundBuffer(&dc, &pDsb, NULL);
-	if (SUCCEEDED(hr))
+	if (nullptr != m_pDSoundBuffer)
 	{
-		hr = pDsb->QueryInterface(IID_IDirectSoundBuffer8, (void**)ppDsb8);
-		pDsb->Release();
+		if (FAILED(m_pDSoundBuffer->Stop()))
+		{
+		}
+	}
+}
+
+HRESULT CSound::CreateSoundBuffer()
+{
+	DSBUFFERDESC dc;
+	ZeroMemory(&dc, sizeof(DSBUFFERDESC));
+	dc.dwSize = sizeof(DSBUFFERDESC);
+
+	DWORD dwFlags = DSBCAPS_STATIC | DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLPOSITIONNOTIFY;
+
+	dc.dwFlags = dwFlags;
+	dc.dwBufferBytes = m_nLength;
+	dc.lpwfxFormat = &m_wfx;
+
+	m_pDSoundBuffer.Release();
+
+	CComPtr<IDirectSoundBuffer> pBuffer;
+	HRESULT hr = m_pDirectSound->CreateSoundBuffer(&dc, &pBuffer, nullptr);
+	if (FAILED(hr))
+	{
+		return -3;
+	}
+
+	GUID IID_IDSoundBuffer = { 0x6825a449, 0x7524, 0x4d82, 0x92, 0x0f, 0x50, 0xe3, 0x6a, 0xb3, 0xab, 0x1e };
+	pBuffer->QueryInterface(IID_IDSoundBuffer, (LPVOID*)&m_pDSoundBuffer);
+	pBuffer.Release();
+
+	void* write1 = 0;
+	void* write2 = 0;
+
+	unsigned long length1 = 0, length2 = 0;
+
+	hr = m_pDSoundBuffer->Lock(0, m_nLength, &write1, &length1, &write2, &length2, 0);
+	if (FAILED(hr))
+	{
+		return -4;
+	}
+
+	if (length1 > 0)
+		memcpy_s(write1, length1, m_RawData.get(), length1);
+
+	if (length2 > 0)
+		memcpy_s(write2, length2, m_RawData.get() + length1, length2);
+
+	hr = m_pDSoundBuffer->Unlock(write1, length1, write2, length2);
+	if (FAILED(hr))
+	{
+		return -5;
 	}
 
 	return hr;
 }
 
-int WavePlay(LPDIRECTSOUNDBUFFER8 pDsb8)
+HRESULT CSound::SetNotification()
 {
-	LPVOID lpWrite;
-	DWORD dwLength;
+	GUID IID_IDSoundNotify = { 0xb0210783, 0x89cd, 0x11d0, 0xaf, 0x8, 0x0, 0xa0, 0xc9, 0x25, 0xcd, 0x16 };
 
-	LONG result = DS_OK;
-	//Get Lock
-	result = pDsb8->Lock(0, 0, &lpWrite, &dwLength, NULL, NULL, DSBLOCK_ENTIREBUFFER);
-	if (DS_OK != result)
+	CComPtr<IDirectSoundNotify8> lpDsNotify;
+	DSBPOSITIONNOTIFY PositionNotify;
+
+	HRESULT hr = m_pDSoundBuffer->QueryInterface(IID_IDSoundNotify, (void**)&lpDsNotify);
+	if (SUCCEEDED(hr))
 	{
-		MessageBox(NULL, L"FAIL to Lock a SecondaryBuffer", L"ERROR", MB_OK);
-		return -1;
+		PositionNotify.dwOffset = DSBPN_OFFSETSTOP;
+		PositionNotify.hEventNotify = m_hCallbackEvent;
+		hr = lpDsNotify->SetNotificationPositions(1, &PositionNotify);
+		lpDsNotify.Release();
 	}
 
-	//Copy PCM Data
-	///memcpy_s(lpWrite, dwLength, PCM데이터 주소, dwLength);
+	return hr;
+}
 
-	//Release Lock
-	pDsb8->Unlock(lpWrite, dwLength, NULL, 0);
-	
-	//Set Position to 0
-	pDsb8->SetCurrentPosition(0);
+UINT __stdcall CSound::SoundCallback(LPVOID lpParam)
+{
+	CSound* pParam = (CSound*)lpParam;
 
-	//Play
-	result = pDsb8->Play(0, 0, 0);
-	if (FAILED(result))
+	while (TRUE != pParam->m_bThreadEnd)
 	{
-		MessageBox(NULL, L"FAIL to Play SecondaryBuffer", L"ERROR", MB_OK);
-		return -2;
+		DWORD dwWait = ::WaitForSingleObject(pParam->m_hCallbackEvent, INFINITE);
+		if (WAIT_OBJECT_0 == dwWait)
+		{
+			if (TRUE == pParam->m_bThreadEnd)
+			{
+				break;
+			}
+			else
+			{
+				UINT msgID = pParam->m_nMsgID;
+				HWND hCallback = pParam->m_hCallbackWnd;
+				if (0 != msgID || nullptr != hCallback)
+				{
+					::PostMessage(hCallback, msgID, 0, 0);
+				}
+			}
+		}
+		else
+		{
+			//TRACE(_T(""));
+		}
 	}
 
 	return 0;
 }
 
 
-
-
-
-
-
-
-//제대로된 포맷인지 궁굼할때. 물론 출력창에 뜬다.
-void OutputDebugWAVEFORMATEX(WAVEFORMATEX wfex)
-{
-	TCHAR str[256] = L"";
-	wsprintf(str, L"wFormatTag      : %d\n", wfex.wFormatTag);
-	OutputDebugString(str);
-
-	wsprintf(str, L"nChannels       : %d\n", wfex.nChannels);
-	OutputDebugString(str);
-
-	wsprintf(str, L"nSamplesPerSec  : %d\n", wfex.nSamplesPerSec);
-	OutputDebugString(str);
-
-	wsprintf(str, L"wBitsPerSample  : %d\n", wfex.wBitsPerSample);
-	OutputDebugString(str);
-
-	wsprintf(str, L"nBlockAlign     : %d\n", wfex.nBlockAlign);
-	OutputDebugString(str);
-
-	wsprintf(str, L"nAvgBytesPerSec : %d\n", wfex.nAvgBytesPerSec);
-	OutputDebugString(str);
-}
-
-
-
-
-CSound::CSound()
-{
-}
-
-CSound::~CSound()
-{
-	CleanUp();
-}
-
-BOOL CSound::Init(HWND hWnd)
-{
-	HRESULT hr = S_OK;
-	hr = DirectSoundCreate8(NULL, &m_pDS, NULL);
-	if (FAILED(hr))
-	{	
-		MessageBox(NULL, L"FAIL to Create Direct Sound", L"ERROR", MB_OK);
-		return FALSE;
-	}
-
-	//DSSCL_NORMAL, DSSCL_PRIORITY, DSSCL_WRITEPRIMARY     //Primary Buffer 제어 관련
-	hr = m_pDS->SetCooperativeLevel(hWnd, DSSCL_PRIORITY);
-	if (FAILED(hr))
-	{
-		MessageBox(NULL, L"FAIL to Set Coop Level", L"ERROR", MB_OK);
-		return FALSE;
-	}
-
-
-	return TRUE;
-}
-
-void CSound::CleanUp()
-{
-	if (m_pDS != NULL)
-	{
-		m_pDS->Release();
-		m_pDS = NULL;
-	}
-}
 
 
 
